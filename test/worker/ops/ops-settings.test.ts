@@ -219,6 +219,13 @@ describe("the next visit's days", () => {
     });
     expect((await named("address_unlock_hour")).set_by).toBeNull();
     expect((await post("/api/settings/address_unlock_hour", { value: 20 })).status).toBe(200);
+    // Put back to its default, 6 pm, it would unlock before Delhi's 8 pm reminders too, so the reset is refused.
+    const reset = await post("/api/settings/address_unlock_hour", { value: null });
+    expect(reset.status).toBe(422);
+    expect(await reset.json()).toMatchObject({
+      error: { code: "figures_conflict", fields: ["address_unlock_hour", "reminder_hour"] },
+    });
+    expect((await named("address_unlock_hour")).value).toBe(20);
     // And the other way: deadlines may not outrun the lapse.
     const lapse = await post("/api/settings/task_lapse_days", { value: 14 });
     expect(lapse.status).toBe(422);

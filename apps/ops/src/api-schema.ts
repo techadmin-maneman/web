@@ -30477,6 +30477,8 @@ export interface components {
                 code: string;
                 name: string;
                 lead_time_days: number;
+                /** @description Its lead time and a period, in whole periods */
+                days_needed: number;
             }[];
             /** @description How many days ahead the forecast looks */
             forecast_days: number;

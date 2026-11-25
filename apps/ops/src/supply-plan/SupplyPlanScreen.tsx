@@ -157,9 +157,9 @@ export function SupplyPlanScreen() {
       {current !== null && (
         <div className={form.screen}>
           {current.past_horizon.length > 0 && (
-            <InlineMessage tone="note">
+            <InlineMessage tone="note" className={styles.flag}>
               {copy.pastHorizon(
-                current.past_horizon.map((item) => ({ name: item.name, days: item.lead_time_days })),
+                current.past_horizon.map((item) => ({ name: item.name, days: item.days_needed })),
                 current.forecast_days,
               )}
             </InlineMessage>

@@ -26,3 +26,8 @@
 .groupTitle {
   font-weight: var(--weight-medium);
 }
+
+/* The note naming items past the forecast, spaced by the page's own gap alone. */
+.flag {
+  margin: 0;
+}

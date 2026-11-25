@@ -14,9 +14,9 @@ export const supplyPlan = {
   none: "Nothing to approve.",
   /** Items whose supplier's lead time, and a period, run past the forecast, which the plan cannot see beyond. */
   pastHorizon: (items: readonly { readonly name: string; readonly days: number }[], forecastDays: number) =>
-    `Lead time past the forecast’s ${String(forecastDays)} days: ${items
-      .map((item) => `${item.name} (${String(item.days)} days)`)
-      .join(", ")}. Raise “Forecast ahead by” in Settings.`,
+    `The forecast looks ${String(forecastDays)} days ahead, short of what these need with a period on top of their ` +
+    `lead time: ${items.map((item) => `${item.name} ${String(item.days)} days`).join(", ")}. Raise “Forecast ahead by” ` +
+    "in Settings, Supply plan.",
   transferColumns: ["Item", "From", "To", "For", "Quantity", "Status"],
   orderColumns: ["Item", "Supplier", "For", "Quantity", "Status"],
   /** The column of quantities, set right as figures are. */

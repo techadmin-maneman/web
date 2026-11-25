@@ -28,6 +28,8 @@ import {
   OPS_SETTINGS,
   settingNamed,
   type NumberSetting,
+  type OpsSetting,
+  type SettingValue,
 } from "../../policy/ops-settings.ts";
 import type { Settings } from "../../config/settings.ts";
 import { ceilingsIn } from "../../policy/rate-limits.ts";
@@ -178,6 +180,17 @@ const stateBody = ({ setting, value, setBy, setAt }: State, settings: Settings) 
   };
 };
 
+/** The first figure a rule's value would leave out of step: with its own figures, the packages, another rule, or a
+ * supplier's lead time; null where it holds with them all. */
+async function conflictIn(db: D1Database, setting: OpsSetting, value: SettingValue): Promise<readonly string[] | null> {
+  return (
+    conflictOf(setting, value) ??
+    (await packagesPastHorizon(db, setting.name, value)) ??
+    (HELD_TOGETHER.has(setting.name) ? nationalConflict(setting.name, value, await settingStanding(db)) : null) ??
+    (await leadTimeConflict(db, setting.name, value))
+  );
+}
+
 export function registerOpsSettings(app: App): void {
   app.openapi(settingsRoute, async (c) => {
     const states = await settingStates(c.env.DB);
@@ -190,6 +203,7 @@ export function registerOpsSettings(app: App): void {
     if (setting === undefined) throw new Error("the route allowed a name the register does not hold");
     const { value } = c.req.valid("json");
 
+    let kept: SettingValue | null = null;
     if (value !== null) {
       const checked = checkValue(setting, value);
       if (!checked.ok) {
@@ -197,30 +211,19 @@ export function registerOpsSettings(app: App): void {
         const fields = checked.refusals.map((refusal) => refusal.field);
         return refuse(c, "invalid_request", fields);
       }
-      const conflict =
-        conflictOf(setting, checked.value) ??
-        (await packagesPastHorizon(c.env.DB, setting.name, checked.value)) ??
-        (HELD_TOGETHER.has(setting.name)
-          ? nationalConflict(setting.name, checked.value, await settingStanding(c.env.DB))
-          : null) ??
-        (await leadTimeConflict(c.env.DB, setting.name, checked.value));
-      if (conflict !== null) return refuse(c, "figures_conflict", conflict);
-      await setOpsSetting(c.env.DB, {
-        setting,
-        value: checked.value,
-        actor: actorOf(c),
-        requestId: c.var.requestId,
-        now: c.var.deps.now(),
-      });
-    } else {
-      await setOpsSetting(c.env.DB, {
-        setting,
-        value: null,
-        actor: actorOf(c),
-        requestId: c.var.requestId,
-        now: c.var.deps.now(),
-      });
+      kept = checked.value;
     }
+    // A reset puts the default back in force, so it is held to the other rules as any figure set is.
+    const inForce = kept ?? (isChoice(setting) ? setting.fallback : fallbackOf(setting, c.var.config.settings));
+    const conflict = await conflictIn(c.env.DB, setting, inForce);
+    if (conflict !== null) return refuse(c, "figures_conflict", conflict);
+    await setOpsSetting(c.env.DB, {
+      setting,
+      value: kept,
+      actor: actorOf(c),
+      requestId: c.var.requestId,
+      now: c.var.deps.now(),
+    });
 
     // The next call on this isolate reads the new value: an order approved straight after reads the rule just set.
     forgetOpsInputs();

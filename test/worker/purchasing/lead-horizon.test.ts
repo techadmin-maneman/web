@@ -54,7 +54,8 @@ describe("a lead time past the forecast", () => {
   it("is named on the supply plan, by the cheapest live supplier's lead time", async () => {
     expect(await plan()).toMatchObject({
       forecast_days: 56,
-      past_horizon: [{ code: "lace", name: "Lace base", lead_time_days: 70 }],
+      // 70 days and a week take eleven weekly periods: 77 days.
+      past_horizon: [{ code: "lace", name: "Lace base", lead_time_days: 70, days_needed: 77 }],
     });
   });
 

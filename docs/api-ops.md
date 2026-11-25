@@ -46834,12 +46834,17 @@ Request body:
           },
           "lead_time_days": {
             "type": "integer"
+          },
+          "days_needed": {
+            "type": "integer",
+            "description": "Its lead time and a period, in whole periods"
           }
         },
         "required": [
           "code",
           "name",
-          "lead_time_days"
+          "lead_time_days",
+          "days_needed"
         ],
         "additionalProperties": false
       },

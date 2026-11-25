@@ -42,7 +42,16 @@ const PLAN = {
       .object({
         lines: z.array(LineSchema),
         past_horizon: z
-          .array(z.object({ code: z.string(), name: z.string(), lead_time_days: z.number().int() }).strict())
+          .array(
+            z
+              .object({
+                code: z.string(),
+                name: z.string(),
+                lead_time_days: z.number().int(),
+                days_needed: z.number().int().openapi({ description: "Its lead time and a period, in whole periods" }),
+              })
+              .strict(),
+          )
           .openapi({ description: "Each stock code whose supplier's lead time, and a period, runs past the forecast" }),
         forecast_days: z.number().int().openapi({ description: "How many days ahead the forecast looks" }),
       })

@@ -43,10 +43,14 @@ export type Conflict = readonly [string, string];
 
 const most = (figures: readonly number[]): number => Math.max(-Infinity, ...figures);
 
-/** The deadline that runs longest, and its queue. */
+/**
+ * The deadline that runs longest, and its queue. A task written by hand lapses from its own due date, not its queue's
+ * deadline, so those queues' deadlines are no part of it.
+ */
 function longestDeadline(deadlines: Figures): { key: string; hours: number } | null {
   let longest: { key: string; hours: number } | null = null;
   for (const [key, hours] of Object.entries(deadlines)) {
+    if (key.startsWith("staff_task_")) continue;
     if (longest === null || hours > longest.hours) longest = { key, hours };
   }
   return longest;

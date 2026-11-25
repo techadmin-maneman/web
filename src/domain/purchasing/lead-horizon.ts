@@ -9,6 +9,8 @@ export interface PastHorizon {
   readonly code: string;
   readonly name: string;
   readonly lead_time_days: number;
+  /** The days the plan needs the forecast to reach: the lead time and a period, in whole periods. */
+  readonly days_needed: number;
 }
 
 /** The codes past the horizon, by the cheapest supplier's lead time, as the plan picks its supplier; by name. */
@@ -18,17 +20,18 @@ export async function leadsPastHorizon(
 ): Promise<PastHorizon[]> {
   const { results } = await db
     .prepare(
-      `SELECT i.consumable_code AS code, c.name, i.lead_time_days, i.unit_price
+      `SELECT i.consumable_code AS code, c.name, i.lead_time_days
        FROM supplier_items i JOIN suppliers s ON s.id = i.supplier_id JOIN consumables c ON c.code = i.consumable_code
        WHERE s.retired_at IS NULL ORDER BY i.consumable_code, i.unit_price`,
     )
-    .all<PastHorizon & { unit_price: number }>();
-  const cheapest = new Map<string, PastHorizon>();
-  for (const row of results) {
-    if (!cheapest.has(row.code))
-      cheapest.set(row.code, { code: row.code, name: row.name, lead_time_days: row.lead_time_days });
-  }
+    .all<{ code: string; name: string; lead_time_days: number }>();
+  const cheapest = new Map<string, { code: string; name: string; lead_time_days: number }>();
+  for (const row of results) if (!cheapest.has(row.code)) cheapest.set(row.code, row);
   return [...cheapest.values()]
-    .filter((each) => periodsCovering(each.lead_time_days, planning.periodDays) > planning.horizonPeriods)
+    .map((each) => ({
+      ...each,
+      days_needed: periodsCovering(each.lead_time_days, planning.periodDays) * planning.periodDays,
+    }))
+    .filter((each) => each.days_needed > planning.horizonPeriods * planning.periodDays)
     .sort((a, b) => a.name.localeCompare(b.name));
 }

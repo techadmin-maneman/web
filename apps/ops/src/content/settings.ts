@@ -393,7 +393,8 @@ export const settings = {
     figures_conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”.`,
     /** A rule refused against another rule, by the rule saved, then the rule it is held to. */
     crossConflicts: {
-      "checkin_radius_m|checkin_radius_approximate_m": "The check-in radius can’t be wider than at a rough pin.",
+      "checkin_radius_m|checkin_radius_approximate_m":
+        "The check-in radius can’t be wider than “Check-in radius at a rough pin”.",
       "checkin_radius_approximate_m|checkin_radius_m":
         "The radius at a rough pin can’t be narrower than the check-in radius, nationally or in any city.",
       "address_unlock_hour|reminder_hour":

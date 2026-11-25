@@ -164,10 +164,10 @@ test("names each item whose lead time runs past the forecast", async ({ page }) 
   await open(page, {
     "GET /api/supply-plan": json({
       ...PLAN,
-      past_horizon: [{ code: "LACE", name: "Lace base", lead_time_days: 70 }],
+      past_horizon: [{ code: "LACE", name: "Lace base", lead_time_days: 70, days_needed: 77 }],
     }),
   });
-  await expect(page.getByRole("main")).toContainText(copy.pastHorizon([{ name: "Lace base", days: 70 }], 56));
+  await expect(page.getByRole("main")).toContainText(copy.pastHorizon([{ name: "Lace base", days: 77 }], 56));
 });
 
 test("says a forecast every period of which is over is out of date", async ({ page }) => {

@@ -86,6 +86,10 @@ describe("rules held together", () => {
       "task_lapse_days",
     ]);
     expect(nationalConflict("task_sla_hours", { care: 24, grievance: 720 }, standing)).toBeNull();
+    // A task written by hand lapses from its own due date, so its queue's deadline is not held to the lapse.
+    expect(
+      nationalConflict("task_sla_hours", { care: 24, staff_task_admin: 720 }, { ...standing, lapseDays: 14 }),
+    ).toBeNull();
   });
 
   it("holds nothing against a rule no other is held to", () => {

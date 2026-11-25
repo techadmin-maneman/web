@@ -34,16 +34,17 @@ refuse a horizon that falls short, rather than refuse the lead time or lengthen 
    - the check-in radius, the nation's or a city's, no wider than the radius at a rough pin;
    - the address unlock no earlier than the reminder hour, the nation's or any city's;
    - the booking break from no earlier than the working day opens, and to no later than it closes;
-   - the lapse, in hours, no shorter than the longest task deadline.
+   - the lapse, in hours, no shorter than the longest task deadline, leaving out the queues of tasks written by hand,
+     which lapse from their own due date.
 2. **A save that would break its pair is refused** as `figures_conflict`, naming its own box and then the other rule's,
    from Settings (`POST /api/settings/{name}`) and from a city's own rules (`PATCH /api/cities/{name}/rules/{rule}`).
-   The rule in force stays as it was.
+   The rule in force stays as it was. A reset to the default is held the same way, against the default it puts back.
 3. **The console says each refusal in a sentence of its own**, "The break must fall within the working day.", not two
    boxes' names, since the other rule is on another page.
 4. **The forecast reaches past every supplier's lead time and one period** (`src/domain/purchasing/lead-horizon.ts`),
    each stock code's lead time its cheapest live supplier's, as the supply plan picks it. The supply plan names each
-   item whose lead time runs past it, with the forecast's reach in days; Settings refuses a horizon, or a planning
-   period, that would leave one past it.
+   item whose lead time and a period run past it, with the days each needs and the forecast's reach; Settings refuses
+   a horizon, or a planning period, that would leave one past it.
 5. Figures already set that break a pair are left as they are; the guard is on the next save of either.
 
 ## Consequences
