@@ -1,7 +1,9 @@
 // The site's words as the Words page last published them (docs/decisions/0127-publishing-the-words.md), which each
 // build of this environment's site fetches and lays over its copy (scripts/build/build-site.ts), and how long each
-// kind of visit is booked for, which its prose says. Published words and the services' lengths are the site's own
-// text and the console's, so nothing here is private; staging's hosts sit behind Access as ever.
+// kind of visit is booked for, which its prose says, and when Customer Care are on, which its business details give as
+// opening hours (docs/decisions/0325-search-pages-and-opening-hours.md). Published words, the services' lengths and
+// Care's times are the site's own text and the console's, so nothing here is private; staging's hosts sit behind
+// Access as ever.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
@@ -9,6 +11,7 @@ import { offeredServices } from "../../domain/booking/services.ts";
 import { latestPublish } from "../../domain/words/publish.ts";
 import { STANDARD_TIER, VISIT_TYPES } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 
 const SiteWordsSchema = z
   .object({
@@ -21,6 +24,10 @@ const SiteWordsSchema = z
       description:
         "Each kind's visit length in minutes, as ops set it on its standard service, else its first offered today; null for a kind offering nothing.",
     }),
+    care_times: z
+      .object({ opens: z.number().int(), closes: z.number().int() })
+      .strict()
+      .openapi({ description: "When Customer Care are on, in minutes past midnight in India, as ops set them." }),
   })
   .strict()
   .openapi("SiteWords");
@@ -36,9 +43,10 @@ const siteWordsRoute = createRoute({
 
 export function registerSiteWords(app: App): void {
   app.openapi(siteWordsRoute, async (c) => {
-    const [publish, offered] = await Promise.all([
+    const [publish, offered, inputs] = await Promise.all([
       latestPublish(c.env.DB),
       offeredServices(c.env.DB, indiaDate(c.var.deps.now())),
+      opsInputs(c),
     ]);
     const lengthOf = (kind: (typeof VISIT_TYPES)[number]) => {
       const ofKind = offered.filter((service) => service.kind === kind);
@@ -56,6 +64,7 @@ export function registerSiteWords(app: App): void {
           service: lengthOf("service"),
           replacement: lengthOf("replacement"),
         },
+        care_times: { opens: inputs.careHours.opens, closes: inputs.careHours.closes },
       },
       200,
     );

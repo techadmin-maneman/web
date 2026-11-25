@@ -15,7 +15,7 @@ import { spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { PRODUCTION_LIVE } from "../../site/src/lib/flags.ts";
-import { fetchSiteWords } from "../lib/site-words.ts";
+import { fetchSiteBuild } from "../lib/site-words.ts";
 import { buildComingSoon } from "./coming-soon.ts";
 
 const { values } = parseArgs({
@@ -42,10 +42,12 @@ if (verb === "build" && environment === "production" && !PRODUCTION_LIVE && !val
   process.exit(0);
 }
 // With --words, as a deploy builds, the words published for this environment, which the build lays over the copy
-// (site/src/lib/published-words.ts); without, none, so a test's build reads nothing over the network.
+// (site/src/lib/published-words.ts), and Care's times, its opening hours (site/src/lib/care-times.ts); without, none,
+// so a test's build reads nothing over the network.
 if (verb === "build") {
-  const words = values.words ? await fetchSiteWords(environment, process.env, fetch) : {};
-  writeFileSync("site/.words.json", JSON.stringify(words));
+  const read = values.words ? await fetchSiteBuild(environment, process.env, fetch) : { words: {}, careTimes: null };
+  writeFileSync("site/.words.json", JSON.stringify(read.words));
+  writeFileSync("site/.care-times.json", JSON.stringify(read.careTimes));
 }
 const astro = spawnSync(process.execPath, ["node_modules/astro/bin/astro.mjs", ...command, "--root", "site"], {
   env: { ...process.env, MM_ENV: environment },

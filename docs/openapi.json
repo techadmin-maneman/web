@@ -467,13 +467,31 @@
               }
             },
             "description": "Each kind's visit length in minutes, as ops set it on its standard service, else its first offered today; null for a kind offering nothing."
+          },
+          "care_times": {
+            "type": "object",
+            "properties": {
+              "opens": {
+                "type": "integer"
+              },
+              "closes": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "opens",
+              "closes"
+            ],
+            "additionalProperties": false,
+            "description": "When Customer Care are on, in minutes past midnight in India, as ops set them."
           }
         },
         "required": [
           "id",
           "published_at",
           "words",
-          "lengths"
+          "lengths",
+          "care_times"
         ],
         "additionalProperties": false
       },

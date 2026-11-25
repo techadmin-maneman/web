@@ -2,15 +2,18 @@
 // A city's page, at /areas/<city>, for each city the FAQ names (src/content/guides.ts, cityPage). It is built with
 // its areas hidden: the site's Worker lists those it serves there, from the served pincodes, and shows them; it sends
 // a city served nowhere to /areas, and leaves such cities out of the list of others. Built with the cities' page, so
-// only while that page is shown.
+// only while that page is shown. A city with words of its own shows them, and its questions, which search engines read
+// too, while they are shown (docs/decisions/0325-search-pages-and-opening-hours.md).
+import Disclosure from "../../components/Disclosure.astro";
 import { buttonLook } from "@maneman/ui/Button";
+import { capsLook } from "@maneman/ui/Caps";
 import LinkRows from "../../components/LinkRows.astro";
-import { areasPage, cityPage, guidesPage } from "../../content/guides.ts";
-import { business } from "../../content/site.ts";
+import { areasPage, cityPage, cityWords, guidesPage } from "../../content/guides.ts";
+import { business, faq, placeholderTag } from "../../content/site.ts";
 import TextPage from "../../layouts/TextPage.astro";
-import { isShown } from "../../lib/build.ts";
+import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
 import { citySlug } from "../../lib/cities.ts";
-import { breadcrumbs } from "../../lib/structured-data.ts";
+import { breadcrumbs, faqPage } from "../../lib/structured-data.ts";
 import { fill } from "../../lib/text.ts";
 
 export function getStaticPaths() {
@@ -30,6 +33,8 @@ const trail = [
   { name: areasPage.title, path: "/areas" },
   { name: words(cityPage.title), path: `/areas/${citySlug(city)}` },
 ];
+const own = cityWords[city];
+const shown = own !== undefined && isShown(own) ? own : null;
 ---
 
 <TextPage
@@ -40,8 +45,17 @@ const trail = [
   publish={cityPage.publish}
   short
   back={{ href: "/areas", label: areasPage.title }}
-  structuredData={[breadcrumbs(trail)]}
+  structuredData={shown === null ? [breadcrumbs(trail)] : [breadcrumbs(trail), faqPage(shown.questions)]}
 >
+  {shown !== null && isTaggedPlaceholder(shown) && <div class={capsLook("label tag draft")}>{placeholderTag}</div>}
+  {shown?.sections.map((section) => (
+    <section>
+      <h2>{section.heading}</h2>
+      {section.paragraphs.map((paragraph) => (
+        <p>{paragraph}</p>
+      ))}
+    </section>
+  ))}
   <section data-city-areas={city} hidden>
     <h2 class="areas-head">{words(cityPage.areas)}</h2>
     <ul class="areas" data-areas-of={city}></ul>
@@ -50,6 +64,18 @@ const trail = [
   <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
     {cityPage.check}
   </a>
+  {shown !== null && (
+    <section class="questions" aria-labelledby="city-questions" data-section="faq">
+      <h2 id="city-questions" class="list-head">
+        {faq.title}
+      </h2>
+      {shown.questions.map((item) => (
+        <Disclosure summary={item.q} look="question" name="city-questions">
+          <p class="answer">{item.a}</p>
+        </Disclosure>
+      ))}
+    </section>
+  )}
   {others.length > 0 && (
     <nav class="others" aria-labelledby="other-cities">
       <h2 id="other-cities" class="list-head">
@@ -91,8 +117,24 @@ const trail = [
   .book {
     margin-top: var(--sp-24);
   }
-  .others {
+  .others,
+  .questions {
     margin-top: var(--sp-40);
+  }
+  .questions .list-head {
+    margin-top: 0;
+  }
+  /* The city's own words, a draft until published: tagged on staging, as an unpublished page is. */
+  .draft {
+    display: inline-block;
+    margin-top: var(--sp-24);
+    padding: var(--sp-4) var(--sp-8);
+  }
+  .answer {
+    margin: 0;
+    padding: 0 0 var(--site-gap-block);
+    font-size: var(--site-fs-body);
+    line-height: var(--lh-155);
   }
   .others .list-head {
     margin-top: 0;

@@ -300,6 +300,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) The one visit is paid through Razorpay only
 - [0285](0285-every-site-booking-is-a-sign-in.md) Every booking on the site asks the WhatsApp code, and signs the client in
 - [0321](0321-the-gurgaon-page.md) The Gurgaon page paid ads land on
+- [0325](0325-search-pages-and-opening-hours.md) Search pages and the business's opening hours
 
 ### The ops console
 
@@ -684,3 +685,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0322](0322-care-times.md) | Customer Care's times, to the minute | 2026-11-25 | accepted |  |
 | [0323](0323-the-unanswered-lead-alert.md) | The unanswered-lead alert | 2026-11-25 | accepted |  |
 | [0324](0324-the-weekly-dashboard.md) | The weekly dashboard | 2026-11-25 | accepted |  |
+| [0325](0325-search-pages-and-opening-hours.md) | Search pages and the business's opening hours | 2026-11-25 | accepted |  |

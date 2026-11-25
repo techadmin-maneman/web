@@ -32,6 +32,7 @@ const siteWords = async () =>
     id: string | null;
     words: object;
     lengths: Record<string, number | null>;
+    care_times: { opens: number; closes: number };
   }>();
 
 beforeEach(async () => {
@@ -43,6 +44,8 @@ beforeEach(async () => {
 describe("publishing the site's words", () => {
   it("gives the site's build nothing before any publish", async () => {
     expect(await siteWords()).toMatchObject({ id: null, published_at: null, words: {} });
+    // Care's times, which the site gives as its opening hours: the console's default, 9:30 am to 7 pm.
+    expect((await siteWords()).care_times).toEqual({ opens: 570, closes: 1140 });
     expect((await listed()).published).toBeNull();
     expect(await onSite(HERO)).toBe(true);
   });

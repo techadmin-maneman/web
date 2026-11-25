@@ -5,6 +5,7 @@
 // No price is written here: a guide says what a price depends on, and that it is quoted at the free consultation
 // (docs/decisions/0073-prices-from-the-price-book.md). The publish gate reads these pages for typed prices too.
 
+import type { FaqItem } from "./site/home.ts";
 import { visitLength } from "./service.ts";
 
 export interface GuideSection {
@@ -351,4 +352,60 @@ export const cityPage = {
   streets: "Within the city, we serve by pincode. Check yours to see the days we can come.",
   check: "Check your pincode",
   others: "Other cities",
+};
+
+/** A city's own words, beside the lines every city's page has: what it says, and its questions. */
+export interface CityWords {
+  readonly publish: boolean;
+  readonly sections: readonly GuideSection[];
+  readonly questions: readonly FaqItem[];
+}
+
+/**
+ * The words a search for a hair system in a city lands on (docs/decisions/0325-search-pages-and-opening-hours.md).
+ * Gurgaon's are a draft for the founder: shown on staging, left out of production until published. They say "hair
+ * system", never "hair patch", and give no price.
+ */
+export const cityWords: Readonly<Partial<Record<string, CityWords>>> = {
+  Gurgaon: {
+    publish: false,
+    sections: [
+      {
+        heading: "Fitted at your home",
+        paragraphs: [
+          "At the consultation, your technician matches a hair system to your own hair: its colour, its density, the way it grows. Your hairline is drawn and agreed with you, and nothing is fitted until you say so.",
+        ],
+      },
+      {
+        heading: "What you pay for",
+        paragraphs: [
+          "You hear the price at the free consultation, before anything is fitted or paid. It depends on the hair system you choose. No deposit, no package.",
+        ],
+      },
+      {
+        heading: "After the fit",
+        paragraphs: [
+          "A service visit every two to four weeks keeps it at its best, at home: your technician lifts it, cleans it, bonds it again and trims it to your own growth.",
+        ],
+      },
+    ],
+    questions: [
+      {
+        q: "Do you come to homes across Gurgaon?",
+        a: "We come by pincode. Check yours on the booking page to see the days we can come.",
+      },
+      {
+        q: "Is the consultation free?",
+        a: "Yes. No fee and no deposit, and if it isn’t for you, you owe nothing.",
+      },
+      {
+        q: "How is a hair system different from a transplant?",
+        a: "A transplant moves hair you still have, and takes months to show. A hair system is real human hair bonded over the area you’ve lost: nothing is cut or moved, and it shows the day it’s fitted.",
+      },
+      {
+        q: "Will anyone be able to tell?",
+        a: "Not at conversational distance. Every hair system we fit has a lace front that melts into the skin at the hairline.",
+      },
+    ],
+  },
 };

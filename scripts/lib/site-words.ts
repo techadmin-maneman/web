@@ -2,7 +2,8 @@
 // (docs/decisions/0127-publishing-the-words.md): read from that environment's own site, past Access on staging. A
 // build that cannot read them stops, so a deploy never puts the code's wording back over what was published. With
 // them come the lengths ops gave each kind's service, which become the site's length lines where no words were
-// published for one, so its prose says what a visit is booked for.
+// published for one, so its prose says what a visit is booked for; and Customer Care's times, which the site gives
+// as its opening hours (docs/decisions/0325-search-pages-and-opening-hours.md).
 
 import { lengthWords } from "../../packages/web-kit/visit-length.ts";
 
@@ -23,14 +24,28 @@ function accessHeaders(env: Readonly<Record<string, string | undefined>>): Recor
   return id === "" || secret === "" ? {} : { "CF-Access-Client-Id": id, "CF-Access-Client-Secret": secret };
 }
 
-/** The published words for an environment: each changed line's key and words; none for a local build. */
-export async function fetchSiteWords(
+/** Customer Care's times, minutes past midnight in India. */
+export interface CareTimes {
+  readonly opens: number;
+  readonly closes: number;
+}
+
+/** What a site's build reads from its environment. */
+export interface SiteBuild {
+  /** Each changed line's key and words. */
+  readonly words: Record<string, string>;
+  /** Care's times as ops set them; null where the API gives none it can read. */
+  readonly careTimes: CareTimes | null;
+}
+
+/** The published words and Care's times for an environment; none for a local build. */
+export async function fetchSiteBuild(
   environment: string,
   env: Readonly<Record<string, string | undefined>>,
   fetcher: Fetcher,
-): Promise<Record<string, string>> {
+): Promise<SiteBuild> {
   const origin = SITE_ORIGINS[environment];
-  if (origin === undefined) return {};
+  if (origin === undefined) return { words: {}, careTimes: null };
   const url = `${origin}/api/site-words`;
   const answer = await fetcher(url, { headers: accessHeaders(env) });
   if (!answer.ok) throw new Error(`the published words could not be read: HTTP ${String(answer.status)} from ${url}`);
@@ -41,7 +56,16 @@ export async function fetchSiteWords(
   const words = Object.fromEntries(
     Object.entries(body.words).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
   );
-  return { ...lengthLines(body.lengths), ...words };
+  return { words: { ...lengthLines(body.lengths), ...words }, careTimes: careTimesOf(body.care_times) };
+}
+
+const isMinuteOfDay = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 24 * 60;
+
+/** Care's times, where the API gave two minutes of the day in order; else none, and the site keeps its own. */
+function careTimesOf(value: unknown): CareTimes | null {
+  if (!isRecord(value) || !isMinuteOfDay(value.opens) || !isMinuteOfDay(value.closes)) return null;
+  return value.opens < value.closes ? { opens: value.opens, closes: value.closes } : null;
 }
 
 /** The site's length line for each kind of visit, by its key in src/config/words.json. */
