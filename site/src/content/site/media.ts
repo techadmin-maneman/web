@@ -1,4 +1,5 @@
-// Pictures and the people the home page shows: the film, the results, the stages, the steps, the founder's words.
+// Pictures and the people the home page shows: the film, the results, the stages, the steps, the founder's words; and
+// the Gurgaon page's own films.
 
 export interface Picture {
   readonly file: string;
@@ -11,17 +12,14 @@ export interface HeroFootage {
   readonly video: string;
   readonly phoneVideo: string;
   readonly poster: string;
-  /** The phone cut's own frame; without one, a phone shows the wide poster's upright centre. */
+  /** The frame the phone cut opens on; without one, a phone shows the wide poster's upright centre. */
   readonly phonePoster?: string;
-  /** Drawn mirrored, so its subject faces the words. */
-  readonly mirrored?: boolean;
   readonly tag: string;
 }
 
 /** A fit filmed at a client's home: the hair system trimmed, its lace cut at the hairline, the hair styled. */
 export const heroFootage = {
   publish: true,
-  mirrored: true,
   video: "fit-film.mp4",
   /**
    * The same film for phones: upright, without sound, under 800 KB. Both are cut from one montage of the fit's
@@ -37,8 +35,11 @@ export const heroFootage = {
 
 /**
  * The Gurgaon page's hero (docs/decisions/0321-the-gurgaon-page.md): clients and the founder before and after, from
- * the launch films. The wide film is the upright one on its own blurred ground; the phone's is 406 x 720, without
- * sound, under 800 KB, as the home page's is.
+ * the launch films, each poster the frame its cut opens on. The wide film is the upright one on its own blurred
+ * ground, its edges feathered; the phone's is 406 x 720, without sound, under 800 KB, as the home page's is:
+ * ffmpeg -i MM_Hero_Loop_9x16.mp4 -filter_complex "[0:v]split=2[a][b];[a]scale=1280:-2,crop=1280:720,boxblur=40:3[bg];
+ *   [b]scale=406:720,format=yuva420p,geq=lum='p(X,Y)':cb='p(X,Y)':cr='p(X,Y)':a='255*clip(min(X,W-1-X)/64,0,1)'[fg];
+ *   [bg][fg]overlay=(W-w)/2:0,format=yuv420p" -an -c:v libx264 -preset slow -crf 28 gurgaon-hero.mp4
  */
 export const gurgaonHeroFootage = {
   publish: true,
@@ -52,7 +53,7 @@ export const gurgaonHeroFootage = {
 /** A film that plays when it is tapped, with its sound; what is said in it is written into the picture. */
 export interface Film {
   readonly video: string;
-  /** A frame of it, 4:5, with no words over its foot, where the Play button sits. */
+  /** A frame of it, 4:5. */
   readonly poster: string;
   /** What it shows, as the film is named to a screen reader. */
   readonly name: string;

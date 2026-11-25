@@ -1,6 +1,6 @@
-// The hero's posters: the page's largest first paint, which shows until the footage plays. A phone gets the phone
-// cut's own frame where the footage has one, and otherwise the poster's upright centre, the frame its cut opens on
-// (heroFootage.phoneVideo in content/site.ts).
+// The hero's posters: the page's largest first paint, which shows until the footage plays. A phone gets the frame its
+// own cut opens on: given apart where the footage has one, and otherwise the poster's upright centre, which the home
+// page's phone cut is cut from (heroFootage.phoneVideo in content/site.ts).
 
 import { getImage } from "astro:assets";
 import { heroFootage, type HeroFootage } from "../content/site.ts";

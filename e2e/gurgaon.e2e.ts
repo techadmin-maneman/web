@@ -23,7 +23,11 @@ test("leads with its own clients' footage, and fetches a film only once it is ta
   await expect(film).toHaveAttribute("controls", "");
   await expect(play).toHaveCount(0);
   await expect.poll(() => fetched.some((url) => url.includes("gurgaon-story-nitin"))).toBe(true);
-  await expect(page.getByRole("button", { name: founderFilm.play, exact: true })).toHaveCount(1);
+
+  // One voice at a time: starting the founder's film pauses Nitin's.
+  await page.getByRole("button", { name: founderFilm.play, exact: true }).click();
+  await expect(page.locator(`video[aria-label="${founderFilm.name}"]`)).toBeFocused();
+  expect(await film.evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
 });
 
 test("leaves the home page its own hero, with no founder's film", async ({ page }) => {

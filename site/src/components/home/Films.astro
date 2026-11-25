@@ -1,6 +1,7 @@
 ---
 // Nitin's fit on the Gurgaon page, on navy (docs/decisions/0321-the-gurgaon-page.md): before and after, then in his
-// own words, each playing when it is tapped. Side by side on a laptop, one after the other on a phone.
+// own words, each playing when it is tapped. Side by side across the page's column on a laptop, one after the other
+// on a phone.
 import FilmCard from "../FilmCard.astro";
 import { gurgaonFilms } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
@@ -35,7 +36,7 @@ const sizes = "(min-width: 761px) 440px, 100vw";
   }
   @media (min-width: 761px) {
     .films {
-      grid-template-columns: repeat(2, minmax(0, var(--site-film-w)));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--site-columns-gap);
     }
   }

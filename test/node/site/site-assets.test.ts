@@ -52,7 +52,7 @@ const ASSETS = [
 ];
 
 describe("the site's assets", () => {
-  it("are the ones it had before the redesign, no more and no fewer", () => {
+  it("are the redesign's and the Gurgaon films', no more and no fewer", () => {
     expect(readdirSync("site/src/assets").sort()).toEqual(ASSETS);
   });
 });
