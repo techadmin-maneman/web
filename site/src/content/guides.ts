@@ -363,7 +363,8 @@ export interface CityWords {
 
 /**
  * The home page's first question, "Will anyone be able to tell?", whose answer Gurgaon's page gives too: copied, so
- * each page's line is its own on the Words page, and publishing one never changes the other.
+ * each page's line is its own on the Words page. Gurgaon's starts from the home page's published wording, and a line
+ * published for Gurgaon never changes the home page's.
  */
 const [homeTell] = faq.items;
 const anyoneCanTell: readonly FaqItem[] = homeTell === undefined ? [] : [{ q: homeTell.q, a: homeTell.a }];

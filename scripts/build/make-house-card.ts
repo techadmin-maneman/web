@@ -10,7 +10,7 @@
 // Writes site/public/images/invite-house.jpg, which the invite's Open Graph tags point at, the same file into the
 // app, whose invite preview shows it, the card in WebP beside it for the invite's own page, and the overlay into
 // src/config/card-overlay.ts. Chats cache a preview by
-// its address, so a house card that changes needs a new HOUSE_CARD_VERSION in site/src/lib/invite.ts;
+// its address, so a house card that changes needs a new HOUSE_CARD_VERSION in src/config/house-card.ts;
 // test/node/site/site-content.test.ts says so.
 
 import { writeFileSync } from "node:fs";
