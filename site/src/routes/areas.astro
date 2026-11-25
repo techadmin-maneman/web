@@ -5,10 +5,10 @@
 import { buttonLook } from "@maneman/ui/Button";
 import LinkRows from "../components/LinkRows.astro";
 import { areasPage, cityPage, guidesPage } from "../content/guides.ts";
-import { business } from "../content/site.ts";
 import TextPage from "../layouts/TextPage.astro";
 import { isShown } from "../lib/build.ts";
 import { citySlug } from "../lib/cities.ts";
+import { SERVED_CITIES } from "../lib/served-cities.ts";
 import { breadcrumbs } from "../lib/structured-data.ts";
 import { fill } from "../lib/text.ts";
 
@@ -41,7 +41,7 @@ const trail = [
       </h2>
       <LinkRows
         look="cities"
-        rows={business.areaServed.map((city) => ({
+        rows={SERVED_CITIES.map((city) => ({
           href: `/areas/${citySlug(city)}`,
           title: fill(cityPage.title, { city }),
           city,

@@ -42,12 +42,15 @@ if (verb === "build" && environment === "production" && !PRODUCTION_LIVE && !val
   process.exit(0);
 }
 // With --words, as a deploy builds, the words published for this environment, which the build lays over the copy
-// (site/src/lib/published-words.ts), and Care's times, its opening hours (site/src/lib/care-times.ts); without, none,
-// so a test's build reads nothing over the network.
+// (site/src/lib/published-words.ts), Care's times, its opening hours (site/src/lib/care-times.ts), and the cities ops
+// serve (site/src/lib/served-cities.ts); without, none, so a test's build reads nothing over the network.
 if (verb === "build") {
-  const read = values.words ? await fetchSiteBuild(environment, process.env, fetch) : { words: {}, careTimes: null };
+  const read = values.words
+    ? await fetchSiteBuild(environment, process.env, fetch)
+    : { words: {}, careTimes: null, cities: null };
   writeFileSync("site/.words.json", JSON.stringify(read.words));
   writeFileSync("site/.care-times.json", JSON.stringify(read.careTimes));
+  writeFileSync("site/.served-cities.json", JSON.stringify(read.cities));
 }
 const astro = spawnSync(process.execPath, ["node_modules/astro/bin/astro.mjs", ...command, "--root", "site"], {
   env: { ...process.env, MM_ENV: environment },

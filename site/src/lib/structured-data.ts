@@ -7,6 +7,7 @@ import type { Guide } from "../content/guides.ts";
 import { business, faq, whatsapp, type FaqItem } from "../content/site.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { CARE_CLOSES, CARE_OPENS } from "./care-times.ts";
+import { SERVED_CITIES } from "./served-cities.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
 
 const CONTEXT = "https://schema.org";
@@ -85,7 +86,7 @@ export function localBusiness(): object {
     image: `${SITE_ORIGIN}/og.png`,
     logo: LOGO,
     parentOrganization: { "@id": ORGANIZATION_ID },
-    areaServed: business.areaServed.map((name) => ({ "@type": "City", name })),
+    areaServed: SERVED_CITIES.map((name) => ({ "@type": "City", name })),
     openingHoursSpecification: [careHours()],
     ...(number === undefined ? {} : { telephone: number }),
     ...contactPoint(number),

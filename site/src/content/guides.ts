@@ -339,7 +339,7 @@ export const areasPage = {
 };
 
 /**
- * A page for each city the FAQ names (business.areaServed in ./site/contact.ts), where a search for a hair system in
+ * A page for each city ops serve (site/src/lib/served-cities.ts), where a search for a hair system in
  * that city lands. The areas we come to there are listed from the served pincodes, which the site's Worker writes in.
  */
 export const cityPage = {

@@ -1,14 +1,24 @@
 // The site's build reads the words published for its environment (scripts/lib/site-words.ts,
-// docs/decisions/0127-publishing-the-words.md), and stops rather than build without them.
+// docs/decisions/0127-publishing-the-words.md), Care's times and the cities ops serve
+// (docs/decisions/0325-search-pages-and-opening-hours.md), and stops rather than build without the words or the cities.
 
 import { describe, expect, it } from "vitest";
 import { fetchSiteBuild, type Fetcher } from "../../../scripts/lib/site-words.ts";
 
-/** A fetch that answers `body` with `status`, and records what it was asked. */
-function answering(body: unknown, status = 200) {
+/**
+ * A fetch that answers the words with `body` and `status`, and the cities served with `cities`, and records what it
+ * was asked.
+ */
+function answering(
+  body: unknown,
+  status = 200,
+  cities: unknown = { cities: ["Gurgaon", "Noida"] },
+  citiesStatus = 200,
+) {
   const asked: { url: string; headers: Record<string, string> }[] = [];
   const fetcher: Fetcher = (url, init) => {
     asked.push({ url, headers: init.headers });
+    if (url.endsWith("/api/served-cities")) return Promise.resolve(Response.json(cities, { status: citiesStatus }));
     return Promise.resolve(Response.json(body, { status }));
   };
   return { fetcher, asked };
@@ -21,18 +31,20 @@ describe("the published words a build reads", () => {
     const { fetcher, asked } = answering(PUBLISHED);
     const env = { CF_ACCESS_CLIENT_ID: "id", CF_ACCESS_CLIENT_SECRET: "secret" };
     expect((await fetchSiteBuild("staging", env, fetcher)).words).toEqual({ "site:home/hero.title": "Hair, at home." });
+    const access = { "CF-Access-Client-Id": "id", "CF-Access-Client-Secret": "secret" };
     expect(asked).toEqual([
-      {
-        url: "https://staging.maneman.in/api/site-words",
-        headers: { "CF-Access-Client-Id": "id", "CF-Access-Client-Secret": "secret" },
-      },
+      { url: "https://staging.maneman.in/api/site-words", headers: access },
+      { url: "https://staging.maneman.in/api/served-cities", headers: access },
     ]);
   });
 
   it("are production's own, with no token to send", async () => {
     const { fetcher, asked } = answering({ id: null, words: {} });
     expect((await fetchSiteBuild("production", {}, fetcher)).words).toEqual({});
-    expect(asked).toEqual([{ url: "https://maneman.in/api/site-words", headers: {} }]);
+    expect(asked).toEqual([
+      { url: "https://maneman.in/api/site-words", headers: {} },
+      { url: "https://maneman.in/api/served-cities", headers: {} },
+    ]);
   });
 
   it("are none for a local build, which asks nothing", async () => {
@@ -88,5 +100,29 @@ describe("Customer Care's times a build reads", () => {
       expect((await fetchSiteBuild("staging", {}, fetcher)).careTimes).toBeNull();
     }
     expect((await fetchSiteBuild("local", {}, answering({}).fetcher)).careTimes).toBeNull();
+  });
+});
+
+describe("the cities a build reads", () => {
+  // The site's city pages, its sitemap and its business details follow the console, not a list typed into the site.
+  it("are the cities ops serve", async () => {
+    const { fetcher } = answering({ id: null, words: {} }, 200, { cities: ["Gurgaon", "Mumbai"], areas: {} });
+    expect((await fetchSiteBuild("staging", {}, fetcher)).cities).toEqual(["Gurgaon", "Mumbai"]);
+  });
+
+  it("are none served, where ops serve none", async () => {
+    const { fetcher } = answering({ id: null, words: {} }, 200, { cities: [] });
+    expect((await fetchSiteBuild("production", {}, fetcher)).cities).toEqual([]);
+  });
+
+  it("stop the build when they cannot be read, so a deploy never builds the wrong cities' pages", async () => {
+    const down = answering({ id: null, words: {} }, 200, {}, 503);
+    await expect(fetchSiteBuild("staging", {}, down.fetcher)).rejects.toThrow("HTTP 503");
+    const odd = answering({ id: null, words: {} }, 200, { cities: [3] });
+    await expect(fetchSiteBuild("staging", {}, odd.fetcher)).rejects.toThrow("shape");
+  });
+
+  it("are none for a local build, which keeps the content's own", async () => {
+    expect((await fetchSiteBuild("local", {}, answering({}).fetcher)).cities).toBeNull();
   });
 });

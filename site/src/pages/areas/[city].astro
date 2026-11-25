@@ -1,5 +1,6 @@
 ---
-// A city's page, at /areas/<city>, for each city the FAQ names (src/content/guides.ts, cityPage). It is built with
+// A city's page, at /areas/<city>, for each city ops serve (src/lib/served-cities.ts, src/content/guides.ts, cityPage).
+// It is built with
 // its areas hidden: the site's Worker lists those it serves there, from the served pincodes, and shows them; it sends
 // a city served nowhere to /areas, and leaves such cities out of the list of others. Built with the cities' page, so
 // only while that page is shown. A city with words of its own shows them, and its questions, which search engines read
@@ -9,16 +10,17 @@ import { buttonLook } from "@maneman/ui/Button";
 import { capsLook } from "@maneman/ui/Caps";
 import LinkRows from "../../components/LinkRows.astro";
 import { areasPage, cityPage, cityWords, guidesPage } from "../../content/guides.ts";
-import { business, faq, placeholderTag } from "../../content/site.ts";
+import { faq, placeholderTag } from "../../content/site.ts";
 import TextPage from "../../layouts/TextPage.astro";
 import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
 import { citySlug } from "../../lib/cities.ts";
+import { SERVED_CITIES } from "../../lib/served-cities.ts";
 import { breadcrumbs, faqPage } from "../../lib/structured-data.ts";
 import { fill } from "../../lib/text.ts";
 
 export function getStaticPaths() {
   if (!isShown(areasPage) || !isShown(cityPage)) return [];
-  return business.areaServed.map((city) => ({ params: { city: citySlug(city) }, props: { city } }));
+  return SERVED_CITIES.map((city) => ({ params: { city: citySlug(city) }, props: { city } }));
 }
 
 interface Props {
@@ -27,7 +29,7 @@ interface Props {
 
 const { city } = Astro.props;
 const words = (text: string) => fill(text, { city });
-const others = business.areaServed.filter((other) => other !== city);
+const others = SERVED_CITIES.filter((other) => other !== city);
 const trail = [
   { name: guidesPage.home, path: "/" },
   { name: areasPage.title, path: "/areas" },

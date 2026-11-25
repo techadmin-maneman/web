@@ -53,6 +53,9 @@ export const islandFailed = {
 export const business = {
   name: "Mane Man",
   description: pageDescriptions.home,
-  /** The cities the FAQ says are covered. */
+  /**
+   * The cities a build that reads none from the console names: a local one, for its tests. A deploy's build names the
+   * cities ops serve (site/src/lib/served-cities.ts).
+   */
   areaServed: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"],
 };
