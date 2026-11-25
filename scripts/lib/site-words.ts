@@ -14,7 +14,11 @@ export const SITE_ORIGINS: Readonly<Record<string, string>> = {
   production: "https://maneman.in",
 };
 
-export type Fetcher = (url: string, init: { readonly headers: Record<string, string> }) => Promise<Response>;
+/** A fetch as the build makes it: Access's headers, and no redirect followed, so they never reach another host. */
+export type Fetcher = (
+  url: string,
+  init: { readonly headers: Record<string, string>; readonly redirect: "error" },
+) => Promise<Response>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
@@ -50,7 +54,7 @@ export async function fetchSiteBuild(
   const origin = SITE_ORIGINS[environment];
   if (origin === undefined) return { words: {}, careTimes: null, cities: null };
   const url = `${origin}/api/site-words`;
-  const answer = await fetcher(url, { headers: accessHeaders(env) });
+  const answer = await fetcher(url, { headers: accessHeaders(env), redirect: "error" });
   if (!answer.ok) throw new Error(`the published words could not be read: HTTP ${String(answer.status)} from ${url}`);
   const body: unknown = await answer.json();
   if (!isRecord(body) || !isRecord(body.words)) {
@@ -73,7 +77,7 @@ async function servedCities(
   fetcher: Fetcher,
 ): Promise<string[]> {
   const url = `${origin}/api/served-cities`;
-  const answer = await fetcher(url, { headers: accessHeaders(env) });
+  const answer = await fetcher(url, { headers: accessHeaders(env), redirect: "error" });
   if (!answer.ok) throw new Error(`the cities served could not be read: HTTP ${String(answer.status)} from ${url}`);
   const body: unknown = await answer.json();
   const cities = isRecord(body) ? body.cities : undefined;

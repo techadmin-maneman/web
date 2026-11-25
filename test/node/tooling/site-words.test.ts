@@ -27,6 +27,17 @@ function answering(
 const PUBLISHED = { id: "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e", words: { "site:home/hero.title": "Hair, at home." } };
 
 describe("the published words a build reads", () => {
+  // Access's service token goes with each request: a redirect followed to another host would carry it there.
+  it("are read following no redirect, nor are the cities", async () => {
+    const redirects: string[] = [];
+    const fetcher: Fetcher = (url, init) => {
+      redirects.push(init.redirect);
+      return Promise.resolve(Response.json(url.endsWith("/api/served-cities") ? { cities: [] } : { words: {} }));
+    };
+    await fetchSiteBuild("staging", {}, fetcher);
+    expect(redirects).toEqual(["error", "error"]);
+  });
+
   it("are staging's own, read past Access with the service token", async () => {
     const { fetcher, asked } = answering(PUBLISHED);
     const env = { CF_ACCESS_CLIENT_ID: "id", CF_ACCESS_CLIENT_SECRET: "secret" };

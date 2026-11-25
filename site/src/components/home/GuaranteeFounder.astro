@@ -1,8 +1,9 @@
 ---
 // The guarantee beside the founder's note, on white (ADR 0263): one after the other on a phone, two columns on a
 // laptop. The note's first paragraph shows, and the rest unfolds (../../islands/home/FounderNote.tsx). A page may add
-// the founder's own fit, as the Gurgaon page does (ADR 0321): after the note on a phone; on a laptop the guarantee
-// runs across the top, and the note, centred, sits beside the film, in the order a keyboard reaches them.
+// the founder's own fit, as the Gurgaon page does (ADR 0321): after the note on a phone; on a laptop the guarantee and
+// the note run down the left, and the film stands beside both on the right, in the order a keyboard reaches them, so
+// the note unfolds downward and nothing beside it moves.
 import FilmCard from "../FilmCard.astro";
 import FounderNote from "../../islands/home/FounderNote.tsx";
 import { founderNote, guarantee, type Film } from "../../content/site.ts";
@@ -55,6 +56,7 @@ const { film } = Astro.props;
     letter-spacing: var(--site-tracking-statement);
     font-weight: var(--weight-semibold);
     color: var(--site-navy);
+    text-wrap: balance;
   }
   .founder-part {
     padding-top: var(--site-gap-block);
@@ -81,20 +83,21 @@ const { film } = Astro.props;
     }
     .with-film {
       grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
-      grid-template-areas: "guarantee guarantee" "founder film";
+      grid-template-areas: "guarantee film" "founder film";
+      /* The first row is the guarantee's height alone; the note takes the rest, so it never moves as it unfolds. */
+      grid-template-rows: auto 1fr;
+      row-gap: var(--sp-40);
     }
     .with-film .guarantee-part {
       grid-area: guarantee;
     }
-    .with-film .guarantee {
-      max-width: var(--measure-hero);
-    }
     .with-film .founder-part {
       grid-area: founder;
-      align-self: center;
     }
     .with-film .founder-film {
       grid-area: film;
+      justify-self: end;
+      width: 100%;
       max-width: var(--site-film-w);
     }
   }

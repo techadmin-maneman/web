@@ -2,8 +2,8 @@
 // and the pincode decides what the page is, a consultation form where we come and a waitlist where we do not, each
 // asking for everything at once, as the design draws it.
 //
-// The invite arrives in the page itself: the mm-site Worker writes it onto #invite, so the referrer's name is there
-// before any JavaScript runs and the preview WhatsApp fetches is the referrer's own card (site/src/worker.ts). Where
+// The invite arrives in the page itself: the mm-site Worker writes it onto #invite, which the island reads as it wakes,
+// and the preview WhatsApp fetches is the referrer's own card (site/src/worker.ts). Where
 // it is missing, in local dev, a page served straight from the assets, or mm-api not answering the Worker, the island
 // fetches it, and any code books. What a referral earns, as ops set it
 // (docs/decisions/0107-referral-rewards-in-the-console.md), arrives the same way, onto <body>, and is fetched where it
