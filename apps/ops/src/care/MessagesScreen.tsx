@@ -288,7 +288,10 @@ export function MessagesScreen() {
   );
 }
 
-/** Settings › Care › Team: the team's rota. */
+/**
+ * The team's rota, with what Care do with it day to day: going on shift, a member's leave, and moving every client of
+ * one to another. Under Messages as Care team, and in Settings › Care › Team beside the team's rules.
+ */
 export function CareTeamScreen() {
   return (
     <div className={form.screen}>

@@ -146,10 +146,13 @@ function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: 
   }, [heading, page, path]);
 }
 
-/** An entry of several pages, in the trail: a way back to the first of them the person may open. */
+/**
+ * An entry of several pages, in the trail: a way back to the first of them the person may open. Not above the page that
+ * bears the entry's own name, as Messages does, which would say its name twice and lead to itself.
+ */
 function entryCrumb(route: Exclude<Route, { readonly page: "more" | "settings" }>, mayCall: MayCall): Crumb[] {
   const entry = navOf(route.page);
-  if (entry.pages.length < 2) return [];
+  if (entry.pages.length < 2 || entry.entry === route.page) return [];
   const first = (entry.pages as readonly Page[]).find((page) => mayOpen(mayCall, page)) ?? route.page;
   return [{ label: NAV_NAMES[entry.entry], to: sectionOf(first).path }];
 }
