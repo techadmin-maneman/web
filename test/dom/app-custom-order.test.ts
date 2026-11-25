@@ -6,7 +6,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CustomOrderCard } from "../../apps/app/src/home/CustomOrderCard.tsx";
-import { home } from "../../apps/app/src/content.ts";
+import { home, withGst } from "../../apps/app/src/content.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
 
@@ -65,7 +65,7 @@ describe("a custom order on Home", () => {
     );
     expect(page.textContent).toContain(copy.awaitingPayment);
     expect(page.querySelector("a")?.getAttribute("href")).toBe("https://rzp.io/i/abc");
-    expect(page.textContent).toContain(copy.pay("Rs. 45,000"));
+    expect(page.textContent).toContain(copy.pay(withGst("Rs. 45,000")));
     expect(page.textContent).toContain(copy.paid);
     expect(page.textContent).toContain("Your hair system is being made, due by");
     expect(page.textContent).toContain(copy.ordered(null));

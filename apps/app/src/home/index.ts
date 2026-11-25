@@ -2,4 +2,5 @@
 
 export { stageText, VisitCard } from "./VisitCard.tsx";
 export { PackageFacts } from "./PackageFacts.tsx";
+export { payAtVisitLine } from "./paid-line.ts";
 export type { Offered as OfferedPackage } from "./HairSystemsScreen.tsx";

@@ -77,4 +77,6 @@
   color: var(--ink-500);
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
+  /* Wraps within its fact rather than widening it, so a long note never pushes a fact onto a row of its own. */
+  contain: inline-size;
 }

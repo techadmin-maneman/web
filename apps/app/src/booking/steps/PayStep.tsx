@@ -54,7 +54,7 @@ function carriedOver(moving: MoveTerms): string | null {
 /** What a change inside the notice takes, where it takes anything. */
 type Charged = Exclude<AtStake, { readonly kind: "nothing" }>;
 
-/** "This visit is less than 24 hours away: moving or cancelling it costs Rs. 1,180 (Rs. 1,000 + Rs. 180 GST)." */
+/** "This visit is less than 24 hours away: moving or cancelling it costs Rs. 1,180 including GST (Rs. 1,000 + Rs. 180 GST)." */
 function InsideNotice({ stake, hours }: { stake: Charged; hours: number }) {
   const copy = booking.pay.insideNotice;
   if (stake.kind === "credit") return copy.credit(hours);

@@ -4,8 +4,8 @@
 import { describe, expect, it } from "vitest";
 import type { Me } from "../../../apps/app/src/api.ts";
 import { nextVisitWords } from "../../../apps/app/src/home/next-visit-words.ts";
-import { paidLine } from "../../../apps/app/src/home/paid-line.ts";
-import { refer } from "../../../apps/app/src/content.ts";
+import { paidLine, payAtVisitLine } from "../../../apps/app/src/home/paid-line.ts";
+import { hairSystems, refer } from "../../../apps/app/src/content.ts";
 
 type NextVisitPrompt = Extract<NonNullable<Me["prompt"]>, { kind: "next_visit" }>;
 
@@ -63,6 +63,18 @@ describe("the next visit card's money line", () => {
 
   it("says nothing of money for a visit neither paid ahead nor owed at it", () => {
     expect(paidLine(visit)).toBeNull();
+  });
+
+  // The one line the next visit's card, the live card and Visits' list all give.
+  it("says GST is in what is left to pay at the visit", () => {
+    expect(payAtVisitLine(220000)).toBe("Pay Rs. 2,200 including GST at the visit");
+  });
+});
+
+describe("a service's interval, beneath its price", () => {
+  it("says GST is in the price, after the interval, in weeks where it is whole weeks", () => {
+    expect(hairSystems.everyWithGst(30)).toBe("every 30 days, including GST");
+    expect(hairSystems.everyWithGst(28)).toBe("every 4 weeks, including GST");
   });
 });
 

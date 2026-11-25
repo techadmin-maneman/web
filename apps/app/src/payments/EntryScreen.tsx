@@ -132,7 +132,7 @@ function Detail({ entry }: { entry: EntryDetail }) {
   return (
     <div className={styles.detail}>
       <p className={styles.bigAmount}>{entryAmount(entry)}</p>
-      {entry.kind === "payment" && <p className={styles.including}>{includingGst}</p>}
+      {entry.kind === "payment" && split !== null && <p className={styles.including}>{includingGst}</p>}
       {split !== null && <p className={styles.including}>{split}</p>}
       <dl className={styles.facts}>
         <Fact name={rows.date} value={fullDate(entry.date)} />

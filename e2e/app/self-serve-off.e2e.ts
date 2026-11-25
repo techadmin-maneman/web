@@ -15,6 +15,7 @@ import { bookedNumber } from "./booked-numbers.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { PRICE } from "../prices.ts";
 
 /**
  * Passes /api/me through with booking.self_serve false and no kind the client books, and anything else `also` changes. Only the browser resolves
@@ -58,6 +59,9 @@ test("a fitted client reschedules through WhatsApp, and asks ops for a time to b
   // With nothing booked, Visits offers the next visit at its foot: asked for on WhatsApp.
   await page.unroute("**/api/me");
   await selfServeOff(page, { next_visit: null });
+  // Home offers the next visit with what it costs, which ops book on WhatsApp.
+  await page.goto("/");
+  await expect(page.getByText(appCopy.booking.withOps(appCopy.withGst(PRICE.service)))).toBeVisible();
   await page.route("**/api/visits", async (route) => {
     const answer = await route.fetch({
       url: `http://127.0.0.1:${String(PORTS.app)}/api/visits`,

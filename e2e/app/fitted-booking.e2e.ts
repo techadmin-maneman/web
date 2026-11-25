@@ -182,7 +182,9 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
   await page.reload();
 
   const home = page.getByRole("region", { name: appCopy.home.owed.label });
-  await expect(home).toContainText("Mane Man Natural hair system · Rs. 45,000");
+  await expect(home).toContainText(
+    appCopy.home.owed.line("Mane Man Natural hair system", appCopy.withGst("Rs. 45,000")),
+  );
   await expect(home.getByRole("link", { name: /^Pay now ?, opens Razorpay in a new tab$/ })).toHaveAttribute(
     "href",
     owed.url,
@@ -194,5 +196,6 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
   const toPay = page.getByRole("region", { name: appCopy.home.owed.label });
   await expect(toPay.getByRole("link")).toHaveAttribute("href", owed.url);
   await expect(toPay).toContainText("Rs. 45,000");
+  await expect(toPay.getByText(appCopy.includingGst, { exact: true })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

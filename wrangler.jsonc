@@ -453,8 +453,8 @@
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         "SERVICE_TOKEN_ACTS_AS": "",
         "BOOKS_SAC": "",
-        // Razorpay is switched on once it gives live keys, after the site is live (owner, 24 November 2026): until then
-        // clients book only the free consultation themselves.
+        // Razorpay is switched on once it gives live keys, which it does only once the site is live: until then clients
+        // book only the free consultation themselves.
         "PAYMENTS_PROVIDER": "none",
         // Google, for the address search and, below, routes: the GOOGLE_MAPS_API_KEY secret, the same key as staging.
         "GEOCODE_PROVIDER": "google",

@@ -16,7 +16,7 @@ import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Segmented } from "@maneman/ui/Segmented";
 import { useState, type ReactNode } from "react";
 import { BookNext } from "../booking/index.ts";
-import { stageText } from "../home/index.ts";
+import { stageText, payAtVisitLine } from "../home/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
@@ -25,7 +25,7 @@ import { dayMonth, fullDate, listMonth, monthInIndia, weekdayName, yearInIndia }
 import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
-import { arrivalHours, home, issues, ONE_VISIT, VISIT_TYPES, visits, windowHours, withGst } from "../content.ts";
+import { arrivalHours, home, issues, ONE_VISIT, VISIT_TYPES, visits, windowHours } from "../content.ts";
 import { AppLink, Shell } from "../frame/Shell.tsx";
 import { bookingName, oneVisitOf, technicianOf, visitTitle } from "../lib/visit.ts";
 import { openIssues } from "../lib/counts.ts";
@@ -85,7 +85,7 @@ function Upcoming({ visit }: { visit: VisitSummary }) {
   let tag: ReactNode;
   if (visit.prepaid) tag = <Badge tone="done">{visits.paid}</Badge>;
   else if (visit.type === "consultation") tag = <Badge>{visits.free}</Badge>;
-  const parts = [when, ...technicianOf(visit), ...(due === null ? [] : [visits.payAtVisit(withGst(rupees(due)))])];
+  const parts = [when, ...technicianOf(visit), ...(due === null ? [] : [payAtVisitLine(due)])];
   return <UpcomingRow date={visit.date} what={what} parts={parts} tag={tag} to={`/visits/${visit.id}`} />;
 }
 

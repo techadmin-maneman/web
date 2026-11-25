@@ -185,9 +185,9 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
   await entries.nth(1).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.service })).toBeVisible();
   await expect(page.getByText(PRICE.service, { exact: true })).toBeVisible();
-  await expect(page.getByText(appCopy.includingGst, { exact: true })).toBeVisible();
   // No rate was recorded for this payment, so nothing is said of GST at all.
   await expect(page.getByText(/GST at/)).toHaveCount(0);
+  await expect(page.getByText(appCopy.includingGst, { exact: true })).toHaveCount(0);
   await expect(page.getByText(client.reference)).toBeVisible();
   for (const name of ["Tax invoice", "Receipt"]) {
     const document = page.getByRole("button", { name: `${name} PDF, opens in a new tab`, exact: true });
