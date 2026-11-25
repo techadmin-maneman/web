@@ -1,0 +1,44 @@
+---
+// Nitin's fit on the Gurgaon page, on navy (docs/decisions/0321-the-gurgaon-page.md): before and after, then in his
+// own words, each playing when it is tapped. Side by side across the page's column on a laptop, one after the other
+// on a phone.
+import FilmCard from "../FilmCard.astro";
+import { gurgaonFilms } from "../../content/site.ts";
+import { isShown } from "../../lib/build.ts";
+
+/** Half the page's column on a laptop, about 512 px at its widest; the whole width on a phone. */
+const sizes = "(min-width: 761px) 50vw, 100vw";
+---
+
+{isShown(gurgaonFilms) && (
+  <section class="band ground-navy" data-section="films" data-ground="ink" aria-labelledby="films-title">
+    <div class="container">
+      <p class="eyebrow">{gurgaonFilms.eyebrow}</p>
+      <h2 class="section-title" id="films-title">
+        {gurgaonFilms.title}
+      </h2>
+      <div class="films">
+        {gurgaonFilms.films.map((film) => (
+          <FilmCard film={film} sizes={sizes} />
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .eyebrow {
+    margin-bottom: var(--sp-12);
+  }
+  .films {
+    display: grid;
+    gap: var(--sp-40);
+    margin-top: var(--site-gap-block);
+  }
+  @media (min-width: 761px) {
+    .films {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--site-columns-gap);
+    }
+  }
+</style>

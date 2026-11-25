@@ -105,6 +105,7 @@
   --site-fs-guide-title: clamp(18px, calc(16.51px + 0.381vw), 22px); /* a guide's name in the list of them */
   --site-measure-text: 720px; /* a guide's, a policy's or the notices' words */
   --site-measure-short: 640px; /* the cities, /stop and the 404 */
+  --site-film-w: var(--measure-form); /* the founder's film beside his note, 4:5, at most: 440 px */
   --site-gap-page-lede: 10px; /* a page's title to its lede, one short paragraph to the next, an area's row */
   --site-gap-near: 18px; /* a guide's way back to its title; a policy's title to its version */
   --site-gap-paragraph: 14px; /* a paragraph to the next */

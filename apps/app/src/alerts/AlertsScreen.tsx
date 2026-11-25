@@ -32,7 +32,7 @@ function Group({ label, list, today }: { label: string; list: readonly Alert[]; 
   return (
     <section aria-label={label}>
       <h2 className={styles.group}>{label}</h2>
-      <ListRows>
+      <ListRows className={styles.rows}>
         {list.map((alert) => {
           const words = alertWords(alert);
           return (

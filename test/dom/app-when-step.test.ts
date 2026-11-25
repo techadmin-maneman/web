@@ -155,7 +155,7 @@ describe("the day and time", () => {
     const picked = DAY.starts[1];
     if (picked === undefined) throw new Error("no start");
     const markup = renderToStaticMarkup(step(picked.starts_at));
-    expect(markup).toContain(copy.summary(shortDate(DAY.date), arrivalHours(picked)));
+    expect(markup).toContain(copy.chosen(shortDate(DAY.date), arrivalHours(picked)));
   });
 
   it("marks a time already inside the notice", () => {
