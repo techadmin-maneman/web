@@ -11,6 +11,11 @@
   font-weight: var(--weight-semibold);
 }
 
+/* The rows start straight under their label, with no rule between: the label heads them. */
+.page .rows {
+  border-top-width: 0;
+}
+
 .note {
   margin: var(--sp-20) 0 0;
   color: var(--ink-500);

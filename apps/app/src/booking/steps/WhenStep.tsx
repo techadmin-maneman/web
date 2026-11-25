@@ -103,7 +103,7 @@ function WhenFooter(props: {
     <>
       {start !== undefined && props.day !== undefined && (
         <p className={styles.summary} role="status">
-          {copy.summary(shortDate(props.day.date), arrivalHours(start))}
+          {copy.chosen(shortDate(props.day.date), arrivalHours(start))}
           {start.change_charged && <span className={styles.late}>{` ${copy.within(props.noticeHours)}`}</span>}
         </p>
       )}
