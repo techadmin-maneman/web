@@ -27,6 +27,14 @@ export function inviteInPage(): Invite | null {
   }
 }
 
+/** Whether Check was tapped before the island woke, as the page noted on #invite (site/src/pages/r/index.astro); once. */
+export function takeEarlyCheck(): boolean {
+  const invite = document.getElementById("invite");
+  if (invite?.dataset.checked === undefined) return false;
+  delete invite.dataset.checked;
+  return true;
+}
+
 /** What a referral earns, as the Worker wrote it onto the page, if it did and it reads as one. Null while it is built. */
 export function rewardInPage(): ReferralReward | null {
   if (typeof document === "undefined") return null;

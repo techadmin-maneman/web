@@ -28,4 +28,10 @@ import { TURNSTILE_SITE_KEYS } from "../../lib/turnstile.ts";
   <div id="invite" data-invite="">
     <Landing client:idle turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
   </div>
+  <script is:inline>
+    // A Check tapped before the island has woken is noted here, and the island answers it as it wakes (usePincode).
+    document.getElementById("invite").addEventListener("submit", (event) => {
+      if (event.target.closest("astro-island[ssr]") !== null) event.currentTarget.dataset.checked = "";
+    });
+  </script>
 </Site>
