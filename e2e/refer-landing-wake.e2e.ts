@@ -59,6 +59,7 @@ test("keeps a pincode typed before the page has woken, and answers a Check tappe
   await field.fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(field).toHaveValue(SERVED.pincode);
+  await expect(page.getByRole("button", { name: referralCopy.referral.pincode.checking })).toBeVisible();
   expect(await stillThisPage()).toBe(true);
   expect(checked()).toBe(0);
 
@@ -68,6 +69,29 @@ test("keeps a pincode typed before the page has woken, and answers a Check tappe
   await expect(page.getByRole("heading", { name: referralCopy.referral.consultation.title })).toBeVisible();
   expect(checked()).toBe(1);
   expect(await stillThisPage()).toBe(true);
+});
+
+test("answers an early Check of a pincode that is not one as a tap would, and leaves Check as it was", async ({
+  page,
+}) => {
+  const checked = await mockLanding(page);
+  let wake: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    wake = resolve;
+  });
+  await page.route("**/_astro/Landing.*.js", async (route) => {
+    await held;
+    await route.continue();
+  });
+
+  await page.goto(`/r/${CODE}`);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill("12");
+  await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
+  wake();
+  await expect(page.getByText(referralCopy.referral.pincode.invalid)).toBeVisible();
+  const button = page.getByRole("button", { name: referralCopy.referral.pincode.check, exact: true });
+  await expect(button).toHaveAttribute("aria-disabled", "false");
+  expect(checked()).toBe(0);
 });
 
 test("checks a pincode once for a Check tapped once the page has woken", async ({ page }) => {

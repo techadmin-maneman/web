@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
 import { checkPincode, type PincodeAnswer } from "../../lib/api.ts";
 import { currentStep, pushStep } from "./history.ts";
@@ -25,15 +25,17 @@ export function usePincode() {
   // Where focus goes once the pincode's answer has drawn, or gone again.
   const focusNext = useRef<"answer" | "field" | null>(null);
 
-  // Digits typed before the island woke, which it does once the page is idle, are kept rather than cleared.
-  useEffect(() => {
+  // Digits typed before the island woke, which it does once the page is idle, are kept rather than cleared. This and the
+  // answer to an early Check run before the first paint, so the button the page showed as checking never reads Check
+  // again in between.
+  useLayoutEffect(() => {
     const typed = field.current?.value.replace(/\D/g, "").slice(0, 6) ?? "";
     if (typed !== "") setPincode(typed);
     if (takeEarlyCheck()) setCheckedEarly(true);
   }, []);
 
   // A Check tapped before then is answered once the field holds those digits, as a tap now would be.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (checkedEarly) field.current?.form?.requestSubmit();
   }, [checkedEarly]);
 

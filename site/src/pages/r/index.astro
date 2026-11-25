@@ -7,7 +7,7 @@
 // own, a JPEG of the same size: only the card's address changes.
 //
 // It is never indexed: an invite is one person's, and its address holds a code.
-import { inviteDescription, inviteTitle } from "../../content/referral.ts";
+import { inviteDescription, inviteTitle, referral } from "../../content/referral.ts";
 import Landing from "../../islands/invite/Landing.tsx";
 import Site from "../../layouts/Site.astro";
 import { ENVIRONMENT, IS_PRODUCTION } from "../../lib/build.ts";
@@ -28,10 +28,13 @@ import { TURNSTILE_SITE_KEYS } from "../../lib/turnstile.ts";
   <div id="invite" data-invite="">
     <Landing client:idle turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
   </div>
-  <script is:inline>
-    // A Check tapped before the island has woken is noted here, and the island answers it as it wakes (usePincode).
+  <script is:inline define:vars={{ checking: referral.pincode.checking }}>
+    // A Check tapped before the island has woken, which nothing yet answers, is noted here and its button reads as
+    // checking; the island answers it as it wakes (usePincode), and its own label replaces this one.
     document.getElementById("invite").addEventListener("submit", (event) => {
-      if (event.target.closest("astro-island[ssr]") !== null) event.currentTarget.dataset.checked = "";
+      if (event.defaultPrevented) return;
+      event.currentTarget.dataset.checked = "";
+      if (event.submitter !== null) event.submitter.textContent = checking;
     });
   </script>
 </Site>
