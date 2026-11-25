@@ -69,8 +69,10 @@ describe("the ops console’s routes", () => {
     ]);
   });
 
-  it("holds everything the console is set up with in Settings, by group, and none of it in the work", () => {
+  it("holds everything the console is set up with in Settings, by group, and none of it in the work but Care's rota", () => {
     const work = SECTIONS.map((section) => section.path);
+    // Care's team is set up in Settings and worked from beside the chats: going on shift, leave, moving clients.
+    expect(work).toContain("/care-team");
     for (const old of ["/prices", "/discount-codes", "/staff", "/cities", "/targets", "/words", "/care-settings"]) {
       expect(work, old).not.toContain(old);
     }
@@ -245,6 +247,8 @@ describe("what the console shows the person signed in", () => {
     expect(landingPath(new Set(Object.keys(ROUTE_NEEDS)))).toBe("/today");
     expect(landingPath(finance)).toBe("/payments");
     expect(landingPath(new Set(["GET /api/whoami"]))).toBeNull();
+    // One who may read the Care team alone lands on it, under Messages.
+    expect(landingPath(new Set(["GET /api/whoami", "GET /api/care-team"]))).toBe("/care-team");
   });
 
   it("moves a path with no page to where the console opens, once the API has said", () => {

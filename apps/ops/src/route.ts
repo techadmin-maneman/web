@@ -23,6 +23,7 @@ export const SECTIONS = [
   { page: "tasks", path: "/tasks", reads: "GET /api/tasks" },
   { page: "dispatch", path: "/dispatch", reads: "GET /api/dispatch" },
   { page: "messages", path: "/messages", reads: "GET /api/conversations" },
+  { page: "care-team", path: "/care-team", reads: "GET /api/care-team" },
   { page: "clients", path: "/clients", reads: "POST /api/clients/find" },
   { page: "technicians", path: "/technicians", reads: "GET /api/technicians" },
   { page: "stock", path: "/stock", reads: "GET /api/stock" },
@@ -62,7 +63,7 @@ export const NAV = [
   { entry: "today", pages: ["today"] },
   { entry: "tasks", pages: ["tasks"] },
   { entry: "dispatch", pages: ["dispatch"] },
-  { entry: "messages", pages: ["messages"] },
+  { entry: "messages", pages: ["messages", "care-team"] },
   { entry: "clients", pages: ["clients"] },
   { entry: "technicians", pages: ["technicians"] },
   {
