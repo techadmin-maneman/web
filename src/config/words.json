@@ -1304,22 +1304,6 @@
     "reviewed": true
   },
   {
-    "key": "site:home/anyoneCanTell.q",
-    "surface": "site",
-    "group": "Home",
-    "where": "anyoneCanTell",
-    "text": "Will anyone be able to tell?",
-    "reviewed": false
-  },
-  {
-    "key": "site:home/anyoneCanTell.a",
-    "surface": "site",
-    "group": "Home",
-    "where": "anyoneCanTell",
-    "text": "Not at conversational distance. The hairline is where it is won or lost, and every hair system we fit has a lace front that melts into the skin. Under a shower, or with a hand run back through the hair, someone could tell.",
-    "reviewed": false
-  },
-  {
     "key": "site:home/faq.title",
     "surface": "site",
     "group": "Home",

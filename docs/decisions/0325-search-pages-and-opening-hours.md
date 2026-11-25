@@ -24,9 +24,10 @@ pages, their sitemap lines and the business's service area named cities served n
 1. **The guides stand for five of the six pages.** They answer those searches already, in published words; no second
    page is written for the same search.
 2. **Gurgaon's page gains words of its own**: being fitted at home there, what you pay for, life after the fit, and
-   four questions. They are a draft for the founder: shown on staging, tagged so, and left out of production until they
-   are published (`cityWords` in `site/src/content/guides.ts`). Its questions are the page's FAQ for search engines
-   while they are shown; a page whose questions are not shown has none.
+   three questions, one of them the home page's own, its answer copied so each page's words are published apart. They
+   are a draft for the founder: shown on staging, tagged so, and left out of production until they are published
+   (`cityWords` in `site/src/content/guides.ts`). Its questions are the page's FAQ for search engines while they are
+   shown; a page whose questions are not shown has none.
 3. **The business's hours are Customer Care's**, every day, as ops set them in the console (ADR 0322), never typed into
    the site. Each deploy's build reads them from its environment's `/api/site-words`, beside the published words and the
    visit lengths, and the business's structured data gives them as its opening hours, and as the hours of its contact

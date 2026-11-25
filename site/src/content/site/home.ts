@@ -266,17 +266,14 @@ export interface FaqItem {
   readonly a: string;
 }
 
-/** The question every page that asks it answers the same way. */
-export const anyoneCanTell: FaqItem = {
-  q: "Will anyone be able to tell?",
-  a: "Not at conversational distance. The hairline is where it is won or lost, and every hair system we fit has a lace front that melts into the skin. Under a shower, or with a hand run back through the hair, someone could tell.",
-};
-
 export const faq = {
   title: "Questions",
   intro: { before: "If yours isn’t here, ", link: "ask on WhatsApp", after: "." },
   items: [
-    anyoneCanTell,
+    {
+      q: "Will anyone be able to tell?",
+      a: "Not at conversational distance. The hairline is where it is won or lost, and every hair system we fit has a lace front that melts into the skin. Under a shower, or with a hand run back through the hair, someone could tell.",
+    },
     {
       q: "How long does a hair system last?",
       a: "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every two to four weeks keeps it at its best.",

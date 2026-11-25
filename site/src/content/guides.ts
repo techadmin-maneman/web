@@ -5,7 +5,7 @@
 // No price is written here: a guide says what a price depends on, and that it is quoted at the free consultation
 // (docs/decisions/0073-prices-from-the-price-book.md). The publish gate reads these pages for typed prices too.
 
-import { anyoneCanTell, type FaqItem } from "./site/home.ts";
+import { faq, type FaqItem } from "./site/home.ts";
 import { visitLength } from "./service.ts";
 
 export interface GuideSection {
@@ -362,6 +362,13 @@ export interface CityWords {
 }
 
 /**
+ * The home page's first question, "Will anyone be able to tell?", whose answer Gurgaon's page gives too: copied, so
+ * each page's line is its own on the Words page, and publishing one never changes the other.
+ */
+const [homeTell] = faq.items;
+const anyoneCanTell: readonly FaqItem[] = homeTell === undefined ? [] : [{ q: homeTell.q, a: homeTell.a }];
+
+/**
  * The words a search for a hair system in a city lands on (docs/decisions/0325-search-pages-and-opening-hours.md).
  * Gurgaon's are a draft for the founder: shown on staging, left out of production until published. They say "hair
  * system", never "hair patch", and give no price.
@@ -398,7 +405,7 @@ export const cityWords: Readonly<Partial<Record<string, CityWords>>> = {
         q: "How is a hair system different from a transplant?",
         a: "A transplant moves hair you still have, and takes months to show. A hair system is real human hair bonded over the area you’ve lost: nothing is cut or moved, and it shows the day it’s fitted.",
       },
-      anyoneCanTell,
+      ...anyoneCanTell,
     ],
   },
 };

@@ -59,7 +59,7 @@ const shown = own !== undefined && isShown(own) ? own : null;
     </section>
   ))}
   <section data-city-areas={city} hidden>
-    <h2 class="areas-head">{words(cityPage.areas)}</h2>
+    <h2 class="list-head">{words(cityPage.areas)}</h2>
     <ul class="areas" data-areas-of={city}></ul>
   </section>
   <p class="streets">{cityPage.streets}</p>
@@ -96,10 +96,6 @@ const shown = own !== undefined && isShown(own) ? own : null;
 
 <style>
   /* The areas the Worker lists, between hairlines: two to a row on a phone, three on a laptop. */
-  .areas-head {
-    margin: var(--sp-32) 0 0;
-    font-size: var(--fs-17);
-  }
   .areas {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
