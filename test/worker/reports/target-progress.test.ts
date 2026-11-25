@@ -5,10 +5,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { capacityRows } from "../../../src/domain/analytics/capacity.ts";
-import { activeClientsBy } from "../../../src/domain/clients/active-clients.ts";
 import { NOW } from "../clock.ts";
 import { captureLogs, markDatabase, request } from "../helpers.ts";
-import { aCheckin, aPayment, aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
+import { aCheckin, aPackage, aPayment, aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
 import { writeRow, type RowOf } from "../fixtures/rows.ts";
 import { enforce, listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
 
@@ -165,11 +164,23 @@ describe("a month's progress towards its targets", () => {
   });
 
   it("counts active clients as Cities does for this month alone, and nothing for a month still to come", async () => {
+    // Fitted in Gurgaon ten days ago on a 30-day package: active, in their pincode's city. One never fitted is not.
+    await aPackage({ code: "natural", name: "Natural hair system", firstFit: 3_000_000, everyDays: 30 });
+    await env.DB.prepare(
+      "INSERT OR IGNORE INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65', 'Gurgaon', 1)",
+    ).run();
+    const client = await aPerson({ package: "natural", pincode: "122018" });
+    await aVisit({
+      person_id: client.id,
+      type: "first_fit",
+      status: "completed",
+      window_start: "2026-09-11T05:00:00.000Z",
+    });
+    await aPerson({ package: "natural", pincode: "122018" });
+
     const now = await progressOf();
-    const active = await activeClientsBy(env.DB, "city", { grace: 30, today: "2026-09-21" });
-    for (const city of ["Gurgaon", "Delhi"]) {
-      expect(figure(now, city, "active_clients")).toBe(active.get(city) ?? 0);
-    }
+    expect(figure(now, "Gurgaon", "active_clients")).toBe(1);
+    expect(figure(now, "Delhi", "active_clients")).toBe(0);
     expect(figure(await progressOf("2026-08"), "Gurgaon", "active_clients")).toBeNull();
     const coming = await progressOf("2026-10");
     expect(coming.progress.length).toBeGreaterThan(0);

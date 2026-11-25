@@ -14,7 +14,8 @@ its target, and the owner ruled on 24 November that the month's actual per measu
 
 1. **`GET /api/targets/progress?month=`** gives every city's figure for every measure, for a month of the year either
    side of this one: this month's to date, a month gone's in all, and nothing for a month still to come. It is read
-   apart from the targets, so saving a target counts nothing again. It is Admin's to read, as the targets are.
+   apart from the targets, so the page sets targets whether or not the month can be counted. It is Admin's to read,
+   nationally, as the targets are, so it gives Admin view each city's revenue and acquisition cost.
 2. **Each measure is counted as the Funnel and the reporting copy count it**, so the page and the dashboards agree,
    city by city. Records marked as tests are left out.
    - Leads: the clients whose first lead came in the month, in that lead's city.
@@ -26,7 +27,9 @@ its target, and the owner ruled on 24 November that the month's actual per measu
      no city, partner payouts and free visits given are not any one city's, so they are left out. A city with no spend
      entered, or no new client, has no figure.
    - Utilisation: of the half-slots its technicians had open on the month's days to today, those taken, as the copy's
-     capacity reads the dispatch board. A city with no technician has no figure.
+     capacity reads the dispatch board. A city with no technician has no figure. It counts today's active technicians,
+     each in today's city, on every day of the month, so where the roster changed in the month it can differ from the
+     reporting copy, which keeps each day as it was worked.
    - On time: of its visits done in the month, those checked in by the end of the arrival window.
 3. **The page writes the figure beneath the measure's name**, "612 so far" this month and "612 in October 2026" for one
    gone, with a line beneath it filling towards the target where one is set, in the accent below half. Acquisition cost

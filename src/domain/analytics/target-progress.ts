@@ -8,7 +8,8 @@
 // - Active clients: today's, as Cities counts them; this month's alone, as a month gone has no count kept.
 // - Revenue: what was paid in the month, before GST and less what was refunded, in the payment's city.
 // - Acquisition cost: the spend entered for the city in the month, over its new clients.
-// - Utilisation: of the half-slots its technicians had open on the month's days to today, those taken.
+// - Utilisation: of the half-slots its technicians had open on the month's days to today, those taken. It counts
+//   today's active technicians in today's cities, so a month whose roster changed can differ from the copy's figure.
 // - On time: of its visits done in the month, those checked in by the end of the arrival window.
 
 import { addDays, addMonths, indiaDate, indiaInstant, monthOf } from "../../lib/india-time.ts";
