@@ -71,8 +71,8 @@ const shown = own !== undefined && isShown(own) ? own : null;
       <h2 id="city-questions" class="list-head">
         {faq.title}
       </h2>
-      {shown.questions.map((item) => (
-        <Disclosure summary={item.q} look="question" name="city-questions">
+      {shown.questions.map((item, index) => (
+        <Disclosure summary={item.q} look="question" name="city-questions" open={index === 0}>
           <p class="answer">{item.a}</p>
         </Disclosure>
       ))}
@@ -130,13 +130,14 @@ const shown = own !== undefined && isShown(own) ? own : null;
   .draft {
     display: inline-block;
     margin-top: var(--sp-24);
-    padding: var(--sp-4) var(--sp-8);
   }
+  /* As the home page's answers: muted, and clear of the sign beside the question. */
   .answer {
     margin: 0;
-    padding: 0 0 var(--site-gap-block);
+    padding: 0 var(--site-space-28-60) var(--site-gap-block) 0;
     font-size: var(--site-fs-body);
     line-height: var(--lh-155);
+    color: var(--site-text-muted);
   }
   .others .list-head {
     margin-top: 0;

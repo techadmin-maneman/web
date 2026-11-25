@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
+import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 let ops: App;
 let site: App;
@@ -42,6 +42,18 @@ beforeEach(async () => {
 });
 
 describe("publishing the site's words", () => {
+  it("gives the site's build Care's times as ops set them in the console", async () => {
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('care_times', ?1, 'ops@localhost', ?2)",
+    )
+      .bind(
+        JSON.stringify({ opens: 630, closes: 1200, first_reply: 30, answered_by: 660, lead_alert: 5 }),
+        NOW.toISOString(),
+      )
+      .run();
+    expect((await siteWords()).care_times).toEqual({ opens: 630, closes: 1200 });
+  });
+
   it("gives the site's build nothing before any publish", async () => {
     expect(await siteWords()).toMatchObject({ id: null, published_at: null, words: {} });
     // Care's times, which the site gives as its opening hours: the console's default, 9:30 am to 7 pm.

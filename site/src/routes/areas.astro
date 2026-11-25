@@ -34,7 +34,7 @@ const trail = [
   <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
     {areasPage.check}
   </a>
-  {isShown(cityPage) && (
+  {isShown(cityPage) && SERVED_CITIES.length > 0 && (
     <nav class="cities" aria-labelledby="city-pages">
       <h2 id="city-pages" class="list-head">
         {areasPage.cityPages}

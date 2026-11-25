@@ -96,6 +96,8 @@ test("Gurgaon's page has words and questions of its own, read as its FAQ", async
   await page.goto("/areas/gurgaon");
   const own = guideCopy.cityWords.Gurgaon;
   if (own === undefined) throw new Error("Gurgaon has words of its own");
+  // A draft until the founder publishes it, and tagged so; the city's page around it is published, and untagged.
+  await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(own.publish ? 0 : 1);
   for (const section of own.sections) {
     await expect(page.getByRole("heading", { level: 2, name: section.heading })).toBeVisible();
   }
@@ -104,9 +106,10 @@ test("Gurgaon's page has words and questions of its own, read as its FAQ", async
   expect(faq?.mainEntity.map((question) => question.name)).toEqual(own.questions.map((question) => question.q));
   await expect(page.locator("summary")).toHaveText(own.questions.map((question) => question.q));
   expect(JSON.stringify(own)).not.toMatch(/hair patch|Rs\.|₹/i);
-  // Another city, with no words of its own, has no FAQ.
+  // Another city, with no words of its own, has no FAQ and no draft.
   await page.goto("/areas/noida");
   expect((await structuredData(page)).map((block) => block["@type"])).not.toContain("FAQPage");
+  await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(0);
 });
 
 test("the home page names the company and the site, with the company’s mark", async ({ page }) => {

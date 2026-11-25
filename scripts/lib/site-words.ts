@@ -37,7 +37,7 @@ export interface SiteBuild {
   readonly words: Record<string, string>;
   /** Care's times as ops set them; null where the API gives none it can read. */
   readonly careTimes: CareTimes | null;
-  /** The cities ops serve, A to Z; null for a build that reads none. */
+  /** The cities ops serve, in the console's order; null for a build that reads none. */
   readonly cities: readonly string[] | null;
 }
 

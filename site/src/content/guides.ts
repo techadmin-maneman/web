@@ -5,7 +5,7 @@
 // No price is written here: a guide says what a price depends on, and that it is quoted at the free consultation
 // (docs/decisions/0073-prices-from-the-price-book.md). The publish gate reads these pages for typed prices too.
 
-import type { FaqItem } from "./site/home.ts";
+import { anyoneCanTell, type FaqItem } from "./site/home.ts";
 import { visitLength } from "./service.ts";
 
 export interface GuideSection {
@@ -373,7 +373,7 @@ export const cityWords: Readonly<Partial<Record<string, CityWords>>> = {
       {
         heading: "Fitted at your home",
         paragraphs: [
-          "At the consultation, your technician matches a hair system to your own hair: its colour, its density, the way it grows. Your hairline is drawn and agreed with you, and nothing is fitted until you say so.",
+          "Your colour is matched against forty samples in daylight, the grey included, and your hairline is drawn and agreed with you. Nothing is fitted until you say so.",
         ],
       },
       {
@@ -391,10 +391,6 @@ export const cityWords: Readonly<Partial<Record<string, CityWords>>> = {
     ],
     questions: [
       {
-        q: "Do you come to homes across Gurgaon?",
-        a: "We come by pincode. Check yours on the booking page to see the days we can come.",
-      },
-      {
         q: "Is the consultation free?",
         a: "Yes. No fee and no deposit, and if it isn’t for you, you owe nothing.",
       },
@@ -402,10 +398,7 @@ export const cityWords: Readonly<Partial<Record<string, CityWords>>> = {
         q: "How is a hair system different from a transplant?",
         a: "A transplant moves hair you still have, and takes months to show. A hair system is real human hair bonded over the area you’ve lost: nothing is cut or moved, and it shows the day it’s fitted.",
       },
-      {
-        q: "Will anyone be able to tell?",
-        a: "Not at conversational distance. Every hair system we fit has a lace front that melts into the skin at the hairline.",
-      },
+      anyoneCanTell,
     ],
   },
 };
