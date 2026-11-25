@@ -12,6 +12,9 @@ import { supplyPlan as copy } from "../../apps/ops/src/content/supply-plan.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
 
+/** Every item's lead time within the forecast, which looks 56 days ahead. */
+const FORECAST_REACH = { past_horizon: [], forecast_days: 56 };
+
 const LOAN = {
   id: "pl-1",
   kind: "transfer",
@@ -70,7 +73,7 @@ function type(input: HTMLInputElement | null, value: string) {
 beforeEach(() => {
   openDialogsAsJsdomCan();
   posted = [];
-  next = { lines: [LOAN, ORDER] };
+  next = { ...FORECAST_REACH, lines: [LOAN, ORDER] };
   vi.stubGlobal(
     "fetch",
     contractChecked("ops", (url: string, init?: RequestInit) => {
@@ -79,7 +82,8 @@ beforeEach(() => {
         posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
         return Promise.resolve(Response.json(next));
       }
-      if (address.pathname === "/api/supply-plan") return Promise.resolve(Response.json({ lines: [LOAN, ORDER] }));
+      if (address.pathname === "/api/supply-plan")
+        return Promise.resolve(Response.json({ ...FORECAST_REACH, lines: [LOAN, ORDER] }));
       return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
     }),
   );
@@ -122,6 +126,7 @@ describe("the supply plan", () => {
     expect(page.textContent).toContain("Kesh Supplies");
     expect(page.textContent).toContain(copy.why({ need: 10, safety: 5, usable: 0 }));
     next = {
+      ...FORECAST_REACH,
       lines: [
         { ...LOAN, state: "approved", quantity: 4 },
         { ...ORDER, state: "approved", quantity: 24, po_number: 7 },
@@ -140,14 +145,14 @@ describe("the supply plan", () => {
 
   it("rejects a line with why, and drafts the plan again", async () => {
     await show();
-    next = { lines: [LOAN, { ...ORDER, state: "rejected", reject_reason: "Bought last week" }] };
+    next = { ...FORECAST_REACH, lines: [LOAN, { ...ORDER, state: "rejected", reject_reason: "Bought last week" }] };
     // The order's line, the second named Solvent.
     await press(buttons("Solvent")[1]);
     await press(button(copy.reject));
     type(document.body.querySelector<HTMLInputElement>('dialog input[maxlength="200"]'), "Bought last week");
     await press(button(copy.confirmReject));
     expect(page.textContent).toContain("Rejected · Bought last week");
-    next = { lines: [] };
+    next = { ...FORECAST_REACH, lines: [] };
     await press(button(copy.draft));
     expect(page.textContent).toContain(copy.none);
     expect(posted.map((each) => each.path)).toEqual(["/api/supply-plan/lines/pl-2/reject", "/api/supply-plan/draft"]);

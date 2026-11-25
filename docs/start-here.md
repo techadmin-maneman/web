@@ -121,7 +121,7 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/purchasing/`): `suppliers`, `purchase-orders`, `letterhead`, `receipts`, `qc-points` (the checks on a hair system that arrives), `supplier-claims`,
   `supplier-scorecard`, `custom-orders`, `custom-order-po`, `forecast`, `forecast-layers`, `forecast-accuracy`,
-  `supply-plan`, `supply-plan-lines`, `demand-events`, `stock-demand`, `kit-shortfalls` (each kit short for its technician's allotted visits)
+  `supply-plan`, `supply-plan-lines`, `lead-horizon` (lead times past the forecast), `demand-events`, `stock-demand`, `kit-shortfalls` (each kit short for its technician's allotted visits)
 - **Routes** (`src/routes/`): `ops/suppliers`, `ops/purchasing`, `ops/purchasing.receipts`, `ops/purchasing.claims`,
   `ops/purchasing.photos`, `ops/purchasing.scorecard`, `ops/custom-orders`, `client/custom-orders`,
   `ops/stock-forecast`, `ops/supply-plan`, `ops/demand-events`

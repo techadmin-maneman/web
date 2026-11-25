@@ -156,6 +156,22 @@ test("shows a city’s own rule beside the national one, and gives it back to th
   expect((await sent).url()).toContain("/api/cities/Mumbai/rules/checkin_radius_m");
 });
 
+// A city's own figure may not break the national rule it keeps within; the record says which, in a sentence.
+test("says a city’s reminder time can’t go out after the address unlocks", async ({ page }) => {
+  await open(page, {
+    "PATCH /api/cities/{name}/rules/{rule}": json(
+      { error: { code: "figures_conflict", fields: ["reminder_hour", "address_unlock_hour"], request_id: "test" } },
+      422,
+    ),
+  });
+  const record = await recordOf(page, "Mumbai");
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.reminder_hour}` }).click();
+  const box = record.getByRole("textbox", { name: copy.rules.names.reminder_hour });
+  await box.fill("21");
+  await box.press("Enter");
+  await expect(page.getByText(copy.rules.conflicts.reminder_hour, { exact: true })).toBeVisible();
+});
+
 test("withdraws a city’s price still to come, asked first", async ({ page }) => {
   await open(page, { "DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}": empty() });
   const prices = page.getByRole("region", { name: copy.prices.panel });

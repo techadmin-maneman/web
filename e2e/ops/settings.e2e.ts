@@ -265,6 +265,24 @@ test.describe("the rules", () => {
     await expect(days.getByRole("alert")).toHaveText("“Bookable ahead” must be at least “A package’s service visits”.");
   });
 
+  // A rule held against another on another page says so in a sentence of its own.
+  test("says what two rules must keep to when a figure would break the other", async ({ page }) => {
+    await open(page, "/settings/field", {
+      "POST /api/settings/checkin_radius_m": fails(422, "figures_conflict", [
+        "checkin_radius_m",
+        "checkin_radius_approximate_m",
+      ]),
+    });
+    const radius = page.getByRole("group", { name: cities.rules.names.checkin_radius_m });
+    await change(radius, cities.rules.names.checkin_radius_m).click();
+    const box = boxIn(page, cities.rules.names.checkin_radius_m);
+    await box.fill("900");
+    await box.press("Enter");
+    await expect(page.getByRole("alert").filter({ hasText: /rough pin/ })).toHaveText(
+      settingsCopy.rules.crossConflicts["checkin_radius_m|checkin_radius_approximate_m"] ?? "",
+    );
+  });
+
   // Seventeen rules on one page, each with its own Save, in no order.
   test("puts each subject's rules on a page of its own, a tab away in its group", async ({ page }) => {
     await open(page, "/settings/field");

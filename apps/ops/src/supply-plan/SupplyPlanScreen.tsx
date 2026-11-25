@@ -9,6 +9,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -155,6 +156,14 @@ export function SupplyPlanScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
+          {current.past_horizon.length > 0 && (
+            <InlineMessage tone="note" className={styles.flag}>
+              {copy.pastHorizon(
+                current.past_horizon.map((item) => ({ name: item.name, days: item.days_needed })),
+                current.forecast_days,
+              )}
+            </InlineMessage>
+          )}
           {current.lines.length === 0 && (
             <Panel titleId="plan-lines" title={copy.toApprove}>
               <EmptyState look="panel" line={copy.none} />

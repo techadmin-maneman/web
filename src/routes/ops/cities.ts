@@ -21,6 +21,7 @@ import { activeClientsBy } from "../../domain/clients/active-clients.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { CITY_SETTING_NAMES } from "../../policy/city-settings.ts";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
+import { cityRuleConflict } from "../../http/setting-standing.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
 
 /** A city's name as the console shows it: letters, spaces, dots, hyphens and apostrophes. */
@@ -172,6 +173,7 @@ const setRuleRoute = opsRoute({
     },
     400: errorResponse("invalid_request: fields names the figure refused"),
     404: errorResponse("not_found: no such city"),
+    422: errorResponse("figures_conflict: fields names the city's figure, then the national rule it must keep within"),
   },
 });
 
@@ -367,6 +369,8 @@ function registerCityRules(app: App): void {
     const { name, rule } = c.req.valid("param");
     if ((await cityNamed(c.env.DB, name)) === null) return refuse(c, "not_found");
     const { value } = c.req.valid("json");
+    const crossed = await cityRuleConflict(c.env.DB, rule, value);
+    if (crossed !== null) return refuse(c, "figures_conflict", [...crossed]);
     const refusal = await setCityRule(c.env.DB, { city: name, name: rule, value }, auditOf(c), c.var.deps.now());
     if (refusal !== null) return refuse(c, "invalid_request", refusal.kind === "refused" ? refusal.fields : ["rule"]);
     return c.json({ city: name, rule, value }, 200);

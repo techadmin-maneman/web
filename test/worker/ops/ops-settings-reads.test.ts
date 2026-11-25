@@ -157,21 +157,21 @@ describe("the store a request reads", () => {
 
   it("reads one row, however many inputs are set", async () => {
     await post("/api/settings/checkin_radius_m", { value: 150 });
-    await post("/api/settings/address_unlock_hour", { value: 17 });
+    await post("/api/settings/address_unlock_hour", { value: 19 });
     await post("/api/settings/booking_days", { value: { ...NEXT_VISIT_DAYS, horizon: 60 } });
 
     const rowsRead = countRowsRead();
     const inputs = await readOpsInputs(env.DB, NOW);
     expect(rowsRead()).toBe(1);
-    expect(inputs).toMatchObject({ checkinRadiusM: 150, addressUnlockHour: 17 });
+    expect(inputs).toMatchObject({ checkinRadiusM: 150, addressUnlockHour: 19 });
     expect(inputs.nextVisitDays.horizon).toBe(60);
   });
 
   it("holds what each change leaves, a figure put back included", async () => {
     await post("/api/settings/checkin_radius_m", { value: 150 });
-    await post("/api/settings/address_unlock_hour", { value: 17 });
+    await post("/api/settings/address_unlock_hour", { value: 19 });
     await post("/api/settings/checkin_radius_m", { value: null });
-    expect(await snapshot()).toEqual({ address_unlock_hour: 17 });
+    expect(await snapshot()).toEqual({ address_unlock_hour: 19 });
   });
 
   // Found 1 October 2026: the snapshot's trigger refused a rule's second change, so the console answered 500.
