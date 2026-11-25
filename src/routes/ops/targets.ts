@@ -1,9 +1,12 @@
-// A month's targets, city by city, behind Access (Admin; docs/decisions/0154-targets-and-reporting-access.md).
+// A month's targets, city by city, behind Access (Admin; docs/decisions/0154-targets-and-reporting-access.md), and
+// what each city has done towards them (docs/decisions/0317-targets-progress.md).
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { removeTarget, setTarget, targetsFor } from "../../domain/ops/targets.ts";
+import { targetProgress } from "../../domain/analytics/target-progress.ts";
+import { opsInputs, stageDays } from "../../http/ops-inputs.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -41,6 +44,26 @@ const TargetsSchema = z
   .strict()
   .openapi("Targets");
 
+const ProgressSchema = z
+  .object({
+    month: z.string(),
+    progress: z.array(
+      z
+        .object({
+          city: z.string(),
+          measure: z.enum(TARGET_MEASURE_NAMES),
+          actual: z.union([z.number().int(), z.null()]).openapi({
+            description:
+              "The month's figure to date, as its target is counted; null where there is nothing to count by, as " +
+              "a month still to come, or active clients in a month gone.",
+          }),
+        })
+        .strict(),
+    ),
+  })
+  .strict()
+  .openapi("TargetProgress");
+
 const listRoute = opsRoute({
   method: "get",
   path: "/api/targets",
@@ -48,6 +71,17 @@ const listRoute = opsRoute({
   request: { query: z.object({ month: Month.optional() }) },
   responses: {
     200: { description: "The month's targets", ...json(TargetsSchema) },
+    400: errorResponse("invalid_request: a month outside the year either side of this one"),
+  },
+});
+
+const progressRoute = opsRoute({
+  method: "get",
+  path: "/api/targets/progress",
+  summary: "What each city has done towards a month's targets, measure by measure; this month's to date",
+  request: { query: z.object({ month: Month.optional() }) },
+  responses: {
+    200: { description: "Each city's figure for each measure", ...json(ProgressSchema) },
     400: errorResponse("invalid_request: a month outside the year either side of this one"),
   },
 });
@@ -116,6 +150,16 @@ export function registerOpsTargets(app: App): void {
     const month = c.req.valid("query").month ?? thisMonth;
     if (month < first || month > last) return refuse(c, "invalid_request", ["month"]);
     return c.json(await monthBody(c, month), 200);
+  });
+
+  app.openapi(progressRoute, async (c) => {
+    const now = c.var.deps.now();
+    const { thisMonth, first, last } = boundsOf(now);
+    const month = c.req.valid("query").month ?? thisMonth;
+    if (month < first || month > last) return refuse(c, "invalid_request", ["month"]);
+    const [inputs, days] = await Promise.all([opsInputs(c), stageDays(c)]);
+    const progress = await targetProgress(c.env.DB, { month, now, arrivalMinutes: inputs.bookingRules.arrival, days });
+    return c.json({ month, progress }, 200);
   });
 
   app.openapi(setRoute, async (c) => {

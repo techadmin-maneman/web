@@ -1,7 +1,7 @@
 // Admin · Targets (docs/decisions/0154-targets-and-reporting-access.md): each month's plan, city by city, by measure,
-// which the nightly reporting copy carries for every scorecard to set beside the actual. A city's measures are each
-// changed where they read (docs/decisions/0212-editing-in-place.md); an emptied one is taken off. Beneath, every target
-// the month holds, to compare.
+// beneath each measure's name how far the city has come, a line filling towards its target (docs/decisions/0317-
+// targets-progress.md). A measure is changed where it reads; an emptied one is taken off. Beneath, every target the
+// month holds, to compare.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { whoWords } from "../lib/who.ts";
@@ -11,8 +11,10 @@ import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { Table } from "@maneman/ui/Table";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
+import { ProgressLine } from "@maneman/ui/Progress";
 import type { Success } from "@maneman/web-kit/api";
-import { fullMonth } from "@maneman/web-kit/dates";
+import { apiNow } from "@maneman/web-kit/clock";
+import { fullMonth, monthInIndia } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
@@ -26,6 +28,29 @@ import { targetsApi } from "./targets-api.ts";
 
 type Targets = Success<paths["/api/targets"]["get"]>;
 type Measure = Targets["measures"][number];
+type Progress = Success<paths["/api/targets/progress"]["get"]>["progress"];
+
+/** Below half its target, a line in the accent, as the design marks one behind. */
+const BEHIND = 0.5;
+
+/**
+ * How far a measure has come, beneath its name: this month's so far, a month gone's in all, and a line filling towards
+ * its target where one is set. Acquisition cost has no line, as a cost is better the less of its target it fills.
+ */
+function ProgressNote(props: { month: string; measure: Measure; actual: number | null; target: number | null }) {
+  if (props.actual === null) return null;
+  const figure = quantity(props.actual);
+  const words =
+    props.month === monthInIndia(apiNow()) ? copy.soFar(figure) : copy.inMonth(figure, fullMonth(props.month));
+  const share =
+    props.target === null || props.target === 0 || props.measure === "cac" ? null : props.actual / props.target;
+  return (
+    <>
+      {words}
+      {share !== null && <ProgressLine value={share} tone={share < BEHIND ? "accent" : "strong"} />}
+    </>
+  );
+}
 
 /** Each month from the first a target may be set in to the last, in order. */
 function monthsBetween(first: string, last: string): string[] {
@@ -67,7 +92,13 @@ function TargetChoice(props: {
 }
 
 /** A city's target for each measure this month, each changed where it reads. */
-function CityTargets({ list, city, onSaved }: { list: Targets; city: string; onSaved: (list: Targets) => void }) {
+function CityTargets(props: {
+  list: Targets;
+  city: string;
+  progress: Progress | null;
+  onSaved: (list: Targets) => void;
+}) {
+  const { list, city, onSaved } = props;
   const mayChange = useAccess().mayCall("POST /api/targets");
   const mayRemove = useAccess().mayCall("POST /api/targets/remove");
   const save = (measure: Measure, set: number | null) => async (typed: string) => {
@@ -89,12 +120,19 @@ function CityTargets({ list, city, onSaved }: { list: Targets; city: string; onS
     <SettingPairs>
       {list.measures.map((measure) => {
         const set = list.targets.find((each) => each.city === city && each.measure === measure)?.target ?? null;
+        const actual = props.progress?.find((each) => each.city === city && each.measure === measure)?.actual ?? null;
         return (
           <FigureRow
             key={`${city}/${measure}`}
             label={copy.measures[measure]}
             value={set}
-            shown={set === null ? copy.notSet : quantity(set)}
+            shown={set === null ? copy.notSet : copy.target(quantity(set))}
+            now={set === null ? copy.notSet : quantity(set)}
+            note={
+              actual === null ? undefined : (
+                <ProgressNote month={list.month} measure={measure} actual={actual} target={set} />
+              )
+            }
             mayChange={mayChange}
             save={save(measure, set)}
           />
@@ -135,6 +173,9 @@ function TargetTable({ list }: { list: Targets }) {
 function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (month: string) => void }) {
   const load = useCallback(() => targetsApi.targets(month === null ? {} : { month }), [month]);
   const [loaded, retry] = useLoad(load);
+  // How far each city has come is read on its own: a page without it still sets targets.
+  const loadProgress = useCallback(() => targetsApi.progress(month === null ? {} : { month }), [month]);
+  const [progress] = useLoad(loadProgress);
   const [saved, setSaved] = useState<Targets | null>(null);
   const [city, setCity] = useState<string | null>(null);
   if (loaded.state === "loading") return <PanelLoading />;
@@ -158,7 +199,12 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
         />
       </Toolbar>
       <Panel titleId="targets" title={shown}>
-        <CityTargets list={list} city={shown} onSaved={setSaved} />
+        <CityTargets
+          list={list}
+          city={shown}
+          progress={progress.state === "loaded" ? progress.value.progress : null}
+          onSaved={setSaved}
+        />
       </Panel>
       <Panel titleId="targets-all" title={copy.all}>
         <TargetTable list={list} />

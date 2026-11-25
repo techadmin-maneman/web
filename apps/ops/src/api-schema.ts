@@ -10765,6 +10765,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/targets/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What each city has done towards a month's targets, measure by measure; this month's to date */
+        get: {
+            parameters: {
+                query?: {
+                    month?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Each city's figure for each measure */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TargetProgress"];
+                    };
+                };
+                /** @description invalid_request: a month outside the year either side of this one */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/targets/remove": {
         parameters: {
             query?: never;
@@ -31242,6 +31316,16 @@ export interface components {
             set_by: string;
             /** Format: date-time */
             set_at: string;
+        };
+        TargetProgress: {
+            month: string;
+            progress: {
+                city: string;
+                /** @enum {string} */
+                measure: "leads" | "consultations" | "new_clients" | "active_clients" | "revenue" | "cac" | "utilisation" | "on_time";
+                /** @description The month's figure to date, as its target is counted; null where there is nothing to count by, as a month still to come, or active clients in a month gone. */
+                actual: number | null;
+            }[];
         };
         TargetChange: {
             month: string;

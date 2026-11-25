@@ -45,6 +45,8 @@ interface EditableRowProps<Draft> {
   readonly value: ReactNode;
   /** The value as the dialog's Now says it, where the row says more beside it, as what it was before. */
   readonly now?: ReactNode;
+  /** A line beneath its name as it reads, as how far a target has come. */
+  readonly note?: ReactNode;
   readonly words: EditingWords;
   /** False for a person who may only look. */
   readonly mayChange?: boolean;
@@ -144,6 +146,7 @@ function useEditing<Draft>(start: () => Draft, save: (draft: Draft) => Promise<s
  */
 function ReadingRow(props: {
   readonly label: string;
+  readonly note?: ReactNode;
   readonly value: ReactNode;
   readonly words: EditingWords;
   /** What Change does; null for a person who may only look. */
@@ -158,7 +161,14 @@ function ReadingRow(props: {
   const valueId = useId();
   return (
     <div className={classes(styles.row, onPage && styles.setting, props.className)} id={props.id}>
-      <span className={styles.label}>{props.label}</span>
+      {props.note === undefined ? (
+        <span className={styles.label}>{props.label}</span>
+      ) : (
+        <span className={styles.naming}>
+          <span className={styles.label}>{props.label}</span>
+          <span className={styles.note}>{props.note}</span>
+        </span>
+      )}
       <span className={styles.reading}>
         <span id={valueId} className={styles.shown}>
           {props.value}
@@ -303,6 +313,7 @@ export function EditableRow<Draft>({
   label,
   value,
   now,
+  note,
   words,
   mayChange = true,
   start,
@@ -324,6 +335,7 @@ export function EditableRow<Draft>({
     return (
       <ReadingRow
         label={label}
+        note={note}
         value={value}
         words={words}
         onOpen={mayChange ? row.open : null}

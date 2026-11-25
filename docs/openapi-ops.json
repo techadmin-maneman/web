@@ -11128,6 +11128,60 @@
         ],
         "additionalProperties": false
       },
+      "TargetProgress": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "progress": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                },
+                "measure": {
+                  "type": "string",
+                  "enum": [
+                    "leads",
+                    "consultations",
+                    "new_clients",
+                    "active_clients",
+                    "revenue",
+                    "cac",
+                    "utilisation",
+                    "on_time"
+                  ]
+                },
+                "actual": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The month's figure to date, as its target is counted; null where there is nothing to count by, as a month still to come, or active clients in a month gone."
+                }
+              },
+              "required": [
+                "city",
+                "measure",
+                "actual"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "month",
+          "progress"
+        ],
+        "additionalProperties": false
+      },
       "TargetChange": {
         "type": "object",
         "properties": {
@@ -42512,6 +42566,111 @@
           },
           "400": {
             "description": "invalid_request: fields names month, city or target for one out of bounds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "access_required",
+                                "not_permitted"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/targets/progress": {
+      "get": {
+        "summary": "What each city has done towards a month's targets, measure by measure; this month's to date",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "required": false,
+            "name": "month",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each city's figure for each measure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetProgress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a month outside the year either side of this one",
             "content": {
               "application/json": {
                 "schema": {

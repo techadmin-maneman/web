@@ -386,6 +386,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/activity": need("admin", "view"),
   // A month's targets, city by city (docs/decisions/0154-targets-and-reporting-access.md).
   "GET /api/targets": need("admin", "view"),
+  "GET /api/targets/progress": need("admin", "view"),
   "POST /api/targets": need("admin", "manage"),
   "POST /api/targets/remove": need("admin", "manage"),
   "POST /api/staff": inOwnPlaces("admin", "manage"),

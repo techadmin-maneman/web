@@ -155,6 +155,9 @@ function cityOfRow(kind: PlacedRecord, row: string): string {
 /** The city of the client in the row named, as SQL: their address's, else where they last booked or asked to be told. */
 export const clientCityOf = (row: string): string => cityOfRow("client", row);
 
+/** The city of the payment in the row named, as SQL: its visit's, else the hold it paid for, else its client's. */
+export const paymentCityOf = (row: string): string => cityOfRow("payment", row);
+
 /** The city a record is in; null where none can be found, or there is no such record. */
 export async function cityOf(db: D1Database, kind: PlacedRecord, id: string): Promise<string | null> {
   const { table } = RECORD_PLACES[kind];
