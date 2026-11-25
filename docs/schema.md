@@ -2365,7 +2365,7 @@ Triggers: `conversations_linked_to_new_number`, `conversations_linked_to_new_per
 
 Each person's first and last touch and their channels, what they told ops of how they heard of us, and whether they asked us to stop sharing with Google and Meta (ADR 0288).
 
-Made by `0227_attribution.sql`.
+Made by `0227_attribution.sql`; changed by `0239_lead_lost.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2382,6 +2382,9 @@ Made by `0227_attribution.sql`.
 | `sharing_stopped_at` | TEXT | yes |  |  | The client asked that nothing more of theirs go to Google or Meta: when, and the member of staff who recorded it. |
 | `sharing_stopped_by` | TEXT | yes |  |  |  |
 | `updated_at` | TEXT | no |  |  |  |
+| `lost_reason` | TEXT | yes |  |  | Why it was lost: one of the job sheet's lost reasons, by its code (docs/decisions/0149-lost-reasons.md). |
+| `lost_objection` | TEXT | yes |  |  | The client's objection, in ops' words. |
+| `lost_at` | TEXT | yes |  |  | When the lead was first recorded as lost; kept while it stays lost. |
 
 Indexes:
 

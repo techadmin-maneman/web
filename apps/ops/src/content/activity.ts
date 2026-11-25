@@ -58,6 +58,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "campaign_link.retire": "Campaign link retired",
   "lead.call": "Lead taken on a call",
   "client.heard_from": "How they heard of us recorded",
+  "client.lost": "Lead lost",
+  "client.lost_taken_back": "Lead no longer lost",
   "client.sharing_stop": "Sharing with Google and Meta stopped",
   "photo.view": "Photographs opened",
   "pincode.launch": "Pincode launched",

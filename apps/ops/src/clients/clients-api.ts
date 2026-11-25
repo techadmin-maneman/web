@@ -21,12 +21,14 @@ import type { paths } from "../api-schema.ts";
 
 export type ClientAttribution = Success<paths["/api/clients/{id}/attribution"]["get"]>;
 export type HeardFromAnswer = Sent<paths["/api/clients/{id}/heard-from"]["post"]>;
+export type LeadLost = Sent<paths["/api/clients/{id}/lost"]["post"]>;
 export type CallLead = Sent<paths["/api/leads/call"]["post"]>;
 
 export const clientsApi = {
   attribution: (id: string) => client.get("/api/clients/{id}/attribution", { path: { id } }),
   setHeardFrom: (id: string, body: HeardFromAnswer) =>
     client.post("/api/clients/{id}/heard-from", { path: { id }, body }),
+  setLost: (id: string, body: LeadLost) => client.post("/api/clients/{id}/lost", { path: { id }, body }),
   stopSharing: (id: string) => client.post("/api/clients/{id}/stop-sharing", { path: { id } }),
   leadFromCall: (body: CallLead) => client.post("/api/leads/call", { body }),
   customOrders: (id: string) => client.get("/api/clients/{id}/custom-orders", { path: { id } }),

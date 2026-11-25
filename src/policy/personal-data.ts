@@ -247,8 +247,8 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     leftOut: ["person_id", "first_touch_id", "last_touch_id", "heard_from_by", "sharing_stopped_by", "updated_at"],
     whyLeftOut: "Our keys to their touches, which are given, and which member of staff wrote down what they said.",
     erasure: {
-      blanks: ["heard_from_other"],
-      why: "Their own words of how they heard of us go; the channels stay, as a figure that names nobody.",
+      blanks: ["heard_from_other", "lost_objection"],
+      why: "Their own words go, of how they heard of us and why they held back; channels and reasons stay, naming nobody.",
     },
   },
   touches: {

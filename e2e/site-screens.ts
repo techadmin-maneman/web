@@ -3,8 +3,12 @@
 
 import * as siteCopy from "../site/src/content/site.ts";
 
+/** The pages whose islands wait to be scrolled to, the try-on teaser's slider among them: opened, never visited. */
+export const SCROLLED_TO = ["/", "/gurgaon"];
+
 export const PAGES = [
   "/",
+  "/gurgaon",
   "/try",
   "/book",
   "/privacy",

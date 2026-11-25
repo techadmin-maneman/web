@@ -8,10 +8,17 @@ import { business, consentBar, footer, whatsapp } from "../content/site.ts";
 import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import { isShown } from "../lib/build.ts";
 import { MORE_PAGES } from "../lib/more-pages.ts";
+import { sectionHref } from "../lib/page-path.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import Lockup from "./Lockup.astro";
 import Social from "./Social.astro";
 
+interface Props {
+  /** The home page's sections this page has of its own (../layouts/Site.astro). */
+  sections?: readonly string[];
+}
+
+const { sections = [] } = Astro.props;
 const { service, more, reach, legal } = footer.columns;
 // The number is given as WhatsApp alone: the footer offers no line to call.
 const showWhatsapp = isShown(whatsapp);
@@ -42,7 +49,10 @@ const year = new Date().getFullYear();
         <div class="column">
           <span class={capsLook("title")}>{service.title}</span>
           {service.links.map((link) => (
-            <a class={textLinkLook({ tone: "ink", quiet: true, className: "item" })} href={link.href}>
+            <a
+              class={textLinkLook({ tone: "ink", quiet: true, className: "item" })}
+              href={sectionHref(link.href, sections)}
+            >
               {link.label}
             </a>
           ))}

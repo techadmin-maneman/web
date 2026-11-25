@@ -52,7 +52,7 @@ describe("the site Worker on a page that names the cities", () => {
     return { html: await response.text(), asked };
   }
 
-  it.each(["/", "/areas"])("writes in the cities served on %s", async (path) => {
+  it.each(["/", "/gurgaon", "/areas"])("writes in the cities served on %s", async (path) => {
     const page = await visit(path, () => Response.json({ cities: ["Gurgaon", "Mumbai"] }));
     expect(named(page.html)).toBe("Your technician comes to your home in Gurgaon and Mumbai.");
     expect(page.html).toContain("<p>Nothing to name</p>");

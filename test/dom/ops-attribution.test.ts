@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CampaignLinksScreen } from "../../apps/ops/src/campaign-links/CampaignLinksScreen.tsx";
 import { CallLead, CallTakenLine } from "../../apps/ops/src/clients/CallLead.tsx";
 import { FoundUs } from "../../apps/ops/src/clients/FoundUs.tsx";
+import { LeadStages } from "../../apps/ops/src/clients/LeadStages.tsx";
+import { leadStages as leadCopy } from "../../apps/ops/src/content/lead-stages.ts";
 import { campaignLinks as linksCopy } from "../../apps/ops/src/content/campaign-links.ts";
 import { foundUs as copy } from "../../apps/ops/src/content/found-us.ts";
 import { spend as spendCopy } from "../../apps/ops/src/content/spend.ts";
@@ -81,6 +83,15 @@ const FOUND = {
   heard_from_other: null,
   heard_from_at: null,
   sharing_stopped_at: null,
+  became_lead_at: "2026-09-19T06:30:00.000Z",
+  first_reply_at: "2026-09-19T06:41:00.000Z",
+  qualified_at: "2026-09-20T07:00:00.000Z",
+  attended_at: null,
+  fitted_at: null,
+  lost_reason: null,
+  lost_reason_label: null,
+  lost_objection: null,
+  lost_at: null,
 };
 
 let page: HTMLElement;
@@ -246,6 +257,78 @@ describe("Copying a campaign link", () => {
     writeText.mockRejectedValue(new DOMException("Refused", "NotAllowedError"));
     await click(linksCopy.copyLabel("Green Valley Towers"));
     expect(page.textContent).toContain(linksCopy.notCopied);
+  });
+});
+
+/** The job sheet's lost reasons, as the client's record lists them. */
+const REASONS = [
+  { code: "price", label: "The price" },
+  { code: "not_ready", label: "Not ready yet" },
+];
+
+describe("A client's lead", () => {
+  it("gives each stage's day, or not yet, and keeps a lead lost with why and their words", async () => {
+    answers.set(`GET /api/clients/${PERSON}/attribution`, () => Response.json(FOUND));
+    answers.set(`POST /api/clients/${PERSON}/lost`, () => new Response(null, { status: 204 }));
+    await show(createElement(LeadStages, { clientId: PERSON, reasons: REASONS }));
+
+    expect(page.textContent).toContain(leadCopy.rows.firstReply);
+    expect(page.textContent).toContain("19 Sep");
+    expect(page.textContent).toContain(leadCopy.notYet);
+    expect(page.textContent).not.toContain(leadCopy.rows.objection);
+
+    await click(`Change ${leadCopy.rows.lost}`);
+    fill(leadCopy.rows.lost, "not_ready");
+    await click("Save");
+    expect(sent.at(-1)).toEqual({ path: `/api/clients/${PERSON}/lost`, body: { lost_reason: "not_ready" } });
+  });
+
+  it("names a reason ops have taken off the list in its own words, never its code", async () => {
+    const lost = {
+      ...FOUND,
+      lost_reason: "chose_another_option",
+      lost_reason_label: "Chose another option",
+      lost_at: FOUND.became_lead_at,
+    };
+    answers.set(`GET /api/clients/${PERSON}/attribution`, () => Response.json(lost));
+    await show(createElement(LeadStages, { clientId: PERSON, reasons: REASONS }));
+    expect(page.textContent).toContain("Chose another option");
+    expect(page.textContent).not.toContain("chose_another_option");
+  });
+
+  it("marks an objection not given as a gap, never a blank", async () => {
+    const lost = { ...FOUND, lost_reason: "price", lost_at: FOUND.became_lead_at };
+    answers.set(`GET /api/clients/${PERSON}/attribution`, () => Response.json(lost));
+    await show(createElement(LeadStages, { clientId: PERSON, reasons: REASONS }));
+    expect(page.textContent).toContain(`${leadCopy.rows.objection}—`);
+  });
+
+  it("takes a lead lost back, and keeps their objection when the reason changes", async () => {
+    const lost = {
+      ...FOUND,
+      lost_reason: "price",
+      lost_objection: "Waiting for a bonus",
+      lost_at: FOUND.became_lead_at,
+    };
+    answers.set(`GET /api/clients/${PERSON}/attribution`, () => Response.json(lost));
+    answers.set(`POST /api/clients/${PERSON}/lost`, () => new Response(null, { status: 204 }));
+    await show(createElement(LeadStages, { clientId: PERSON, reasons: REASONS }));
+    expect(page.textContent).toContain("Waiting for a bonus");
+    expect(page.textContent).toContain(leadCopy.rows.lostOn);
+    expect(page.textContent).toContain("The price");
+
+    await click(`Change ${leadCopy.rows.lost}`);
+    fill(leadCopy.rows.lost, "not_ready");
+    await click("Save");
+    expect(sent.at(-1)).toEqual({
+      path: `/api/clients/${PERSON}/lost`,
+      body: { lost_reason: "not_ready", lost_objection: "Waiting for a bonus" },
+    });
+
+    await click(`Change ${leadCopy.rows.lost}`);
+    fill(leadCopy.rows.lost, "");
+    await click("Save");
+    expect(sent.at(-1)).toEqual({ path: `/api/clients/${PERSON}/lost`, body: { lost_reason: null } });
   });
 });
 

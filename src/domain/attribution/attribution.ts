@@ -178,6 +178,9 @@ export interface ClientAttribution {
   readonly heard_from_other: string | null;
   readonly heard_from_at: string | null;
   readonly sharing_stopped_at: string | null;
+  readonly lost_reason: string | null;
+  readonly lost_objection: string | null;
+  readonly lost_at: string | null;
 }
 
 const SHOWN = `SELECT t.at, t.via, t.channel, t.utm_source, t.utm_medium, t.utm_campaign, t.landing_path, t.referrer,
@@ -189,7 +192,7 @@ export async function clientAttribution(db: D1Database, personId: string): Promi
   const row = await db
     .prepare(
       `SELECT first_touch_id, last_touch_id, attributed_channel, last_touch_channel, heard_from, heard_from_other,
-         heard_from_at, sharing_stopped_at,
+         heard_from_at, sharing_stopped_at, lost_reason, lost_objection, lost_at,
          (SELECT COUNT(*) FROM touches t WHERE t.person_id = ?1) AS touches
        FROM person_attribution WHERE person_id = ?1`,
     )

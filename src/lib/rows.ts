@@ -1096,6 +1096,9 @@ export interface Rows {
     readonly sharing_stopped_at: string | null;
     readonly sharing_stopped_by: string | null;
     readonly updated_at: string;
+    readonly lost_reason: string | null;
+    readonly lost_objection: string | null;
+    readonly lost_at: string | null;
   };
   readonly photo_sets: {
     readonly id: string;

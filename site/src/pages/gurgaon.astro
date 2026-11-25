@@ -1,0 +1,32 @@
+---
+// The page paid ads in Gurgaon land on (docs/decisions/0321-the-gurgaon-page.md): the home page's own sections, in the
+// order the brief gives, with no price. The film leads; the guarantee, the three steps at home, the try-on and the
+// questions follow; the close books the free consultation, and the bar at a phone's foot opens WhatsApp. Its links stay
+// on the site, so the visitor's touches go with them, and WhatsApp's message carries the visitor's reference.
+import Closing from "../components/home/Closing.astro";
+import Faq from "../components/home/Faq.astro";
+import GuaranteeFounder from "../components/home/GuaranteeFounder.astro";
+import Hero from "../components/home/Hero.astro";
+import HowItWorks from "../components/home/HowItWorks.astro";
+import TryOnTeaser from "../components/home/TryOnTeaser.astro";
+import { pageDescriptions, pageTitles } from "../content/site.ts";
+import Site from "../layouts/Site.astro";
+import { faqPage, localBusiness, organization } from "../lib/structured-data.ts";
+
+const structuredData = [organization(), localBusiness(), faqPage()];
+---
+
+<Site
+  title={pageTitles.gurgaon}
+  description={pageDescriptions.gurgaon}
+  structuredData={structuredData}
+  sections={["faq"]}
+  home
+>
+  <Hero />
+  <GuaranteeFounder />
+  <HowItWorks />
+  <TryOnTeaser />
+  <Faq />
+  <Closing />
+</Site>

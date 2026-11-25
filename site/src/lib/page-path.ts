@@ -8,3 +8,10 @@ export const isBookingPage = (path: string): boolean => path === "/book" || path
 
 /** The booking and the try-on, flows of their own: on a laptop, the flow's bar for a header and no footer (ADR 0265). */
 export const isFlowPage = (path: string): boolean => isBookingPage(path) || path === "/try";
+
+/**
+ * A link to one of the home page's sections ("/#faq"), kept on the page where the page has that section of its own,
+ * as the Gurgaon page has the questions: "#faq" there, "/#faq" on every other.
+ */
+export const sectionHref = (href: string, sections: readonly string[]): string =>
+  href.startsWith("/#") && sections.includes(href.slice(2)) ? href.slice(1) : href;

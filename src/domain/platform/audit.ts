@@ -78,6 +78,9 @@ export const AUDIT_ACTIONS = [
   "lead.call",
   "client.heard_from",
   "client.sharing_stop",
+  // A lead recorded as lost, or taken back (docs/decisions/0320-lead-stages.md).
+  "client.lost",
+  "client.lost_taken_back",
   // Ops opening one of a client's photographs.
   "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).

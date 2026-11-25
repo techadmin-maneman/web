@@ -76,6 +76,8 @@ const CLIENT_APP_BUDGET: Budget = {
 /** Each page audited: its report's name, its address, and its budget. */
 const PAGES: readonly { name: string; url: string; budget: Budget }[] = [
   { name: "home", url: `${SITE}/`, budget: SITE_BUDGET },
+  // The page paid ads land on: a 4G phone's largest paint within the site's budget (docs/decisions/0321-the-gurgaon-page.md).
+  { name: "gurgaon", url: `${SITE}/gurgaon`, budget: SITE_BUDGET },
   { name: "try", url: `${SITE}/try`, budget: SITE_BUDGET },
   { name: "book", url: `${SITE}/book`, budget: SITE_BUDGET },
   // Every invite is the same page (docs/decisions/0027-referral-landing.md); the local API does not know this
