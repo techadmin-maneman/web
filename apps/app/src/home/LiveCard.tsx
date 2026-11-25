@@ -12,7 +12,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { firstNameOf } from "@rules/lib/names.ts";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { VisitSummary } from "../api.ts";
-import { live, note, visits } from "../content.ts";
+import { live, note, visits, withGst } from "../content.ts";
 import { AppLink } from "../frame/Shell.tsx";
 import { oneVisitOf, summaryName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
@@ -155,7 +155,7 @@ function Kept({ visit, clientNote }: { visit: VisitSummary; clientNote: string |
     <>
       {visit.pay_at_visit !== null && (
         <ul className={home.facts}>
-          <Fact icon={CLIENT_ICONS.receipt}>{visits.payAtVisit(rupees(visit.pay_at_visit))}</Fact>
+          <Fact icon={CLIENT_ICONS.receipt}>{visits.payAtVisit(withGst(rupees(visit.pay_at_visit)))}</Fact>
         </ul>
       )}
       {oneVisit !== null && <OneVisitTerms price={oneVisit} />}

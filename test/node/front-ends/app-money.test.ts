@@ -7,19 +7,25 @@ import { describe, expect, it } from "vitest";
 import { amountOff, priceFigures } from "../../../apps/app/src/lib/money.ts";
 
 describe("a price’s figures", () => {
-  it("leads with what is charged and gives the GST split beneath once GST applies", () => {
+  it("leads with what is charged, saying GST is in it, and gives the GST split beneath once GST applies", () => {
     expect(priceFigures({ amount_ex_gst: 3000000, amount: 3540000 })).toEqual({
-      amount: "Rs. 35,400",
+      amount: "Rs. 35,400 including GST",
       split: "Rs. 30,000 + Rs. 5,400 GST",
     });
   });
 
   it("gives one figure while GST is nothing, as on staging", () => {
-    expect(priceFigures({ amount_ex_gst: 200000, amount: 200000 })).toEqual({ amount: "Rs. 2,000", split: null });
+    expect(priceFigures({ amount_ex_gst: 200000, amount: 200000 })).toEqual({
+      amount: "Rs. 2,000 including GST",
+      split: null,
+    });
   });
 
   it("gives one figure, never a split at a guessed rate, where no rate was recorded", () => {
-    expect(priceFigures({ amount_ex_gst: null, amount: 3540000 })).toEqual({ amount: "Rs. 35,400", split: null });
+    expect(priceFigures({ amount_ex_gst: null, amount: 3540000 })).toEqual({
+      amount: "Rs. 35,400 including GST",
+      split: null,
+    });
   });
 });
 

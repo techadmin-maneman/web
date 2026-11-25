@@ -9,7 +9,7 @@ import { indiaDate, listDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { firstNameOf } from "@rules/lib/names.ts";
 import type { Me } from "../api.ts";
-import { home } from "../content.ts";
+import { home, withGst } from "../content.ts";
 import styles from "./home.module.css";
 
 /** A visit nobody was home for, while ops decide what follows: said here, so the client is not left with silence. */
@@ -36,7 +36,7 @@ export function PaymentOwed({ owed }: { owed: NonNullable<Me["payment_owed"]> })
       <h2 className={capsLook(styles.label)} id="owed">
         {copy.label}
       </h2>
-      <p className={styles.owedLine}>{copy.line(owed.product, rupees(owed.amount))}</p>
+      <p className={styles.owedLine}>{copy.line(owed.product, withGst(rupees(owed.amount)))}</p>
       {owed.url === null ? (
         <p className={styles.owedWait}>{copy.onItsWay}</p>
       ) : (

@@ -46,8 +46,9 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(HELD_FOR)).toBeVisible();
   await expect(pay.getByText(PRICE.service, { exact: true })).toBeVisible();
-  // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it.
-  await expect(pay.getByText(/GST/)).toHaveCount(0);
+  // Every price is GST-inclusive, and the total says so, though GST is nothing here: no split beneath it.
+  await expect(pay.getByText(appCopy.booking.pay.totalWithGst, { exact: true })).toBeVisible();
+  await expect(pay.getByText(/\+ Rs\. [\d,]+ GST/)).toHaveCount(0);
   // The day picked is never tomorrow, so its window is outside the notice whatever the time of day.
   await expect(pay.getByText(FREE_UNTIL)).toBeVisible();
   // Checkout lists the ways to pay, so the sheet offers no choice Checkout would ignore.

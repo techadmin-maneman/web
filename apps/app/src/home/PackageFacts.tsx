@@ -5,7 +5,7 @@
 import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { rupees } from "@maneman/web-kit/money";
 import type { Price } from "../api.ts";
-import { hairSystems } from "../content.ts";
+import { hairSystems, withGst } from "../content.ts";
 import styles from "./hair-systems.module.css";
 
 export function PackageFacts(props: {
@@ -25,7 +25,7 @@ export function PackageFacts(props: {
       inLabel={props.inLabel}
       className={styles.facts}
       items={[
-        ...(props.price === null ? [] : [{ term: props.priceTerm, details: rupees(props.price.amount) }]),
+        ...(props.price === null ? [] : [{ term: props.priceTerm, details: withGst(rupees(props.price.amount)) }]),
         { term: copy.lasts, details: copy.months(props.months) },
         ...(props.service === null
           ? []
@@ -34,7 +34,7 @@ export function PackageFacts(props: {
                 term: copy.service,
                 details: (
                   <>
-                    {rupees(props.service.amount)}
+                    {withGst(rupees(props.service.amount))}
                     <span className={styles.per}>{copy.every(props.everyDays)}</span>
                   </>
                 ),

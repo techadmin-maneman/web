@@ -230,7 +230,7 @@ function PriceFacts({ hold, moving }: { hold: Hold; moving: MoveTerms | undefine
       {kept !== null && free ? (
         <Fact name={copy.payment}>{kept}</Fact>
       ) : (
-        <Fact name={split === null || free ? copy.total : copy.totalWithGst}>
+        <Fact name={free ? copy.total : copy.totalWithGst}>
           {covered && <s className={styles.was}>{rupees(hold.price.amount)}</s>}
           {listPrice !== null && <s className={styles.was}>{rupees(listPrice.amount)}</s>}
           <strong className={styles.amount}>{amountLine(hold, covered, free)}</strong>

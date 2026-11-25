@@ -167,7 +167,7 @@ export function TierChoices(props: {
         </p>
       )}
       <p className={styles.tierNote}>
-        {`${hairSystems.gst} ${copy.carries} `}
+        {`${copy.carries} `}
         <TextLink inline href={whatsappWith(copy.asking)}>
           {copy.ask}
         </TextLink>

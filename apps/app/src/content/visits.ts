@@ -46,7 +46,7 @@ export const visits = {
     /** A client fitted before their visits were recorded has no first fit to name, which is not the same as none. */
     noFirstFit: "Not yet",
     /** Beside the total, so a figure that includes tax is not read as one that does not. */
-    gst: "GST included",
+    gst: "Including GST",
   },
   detail: {
     back: "Back to visits",

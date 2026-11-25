@@ -7,7 +7,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type CustomOrder } from "../api.ts";
-import { home } from "../content.ts";
+import { home, withGst } from "../content.ts";
 import styles from "./home.module.css";
 
 const copy = home.customOrder;
@@ -22,7 +22,7 @@ function Line({ order }: { order: Order }) {
           <p className={styles.promptLine}>{copy.awaitingPayment}</p>
           {order.pay_url !== null && (
             <TextLink tone="brass" className={styles.promptLink} href={order.pay_url} newTab>
-              <span>{copy.pay(rupees(order.amount))}</span>
+              <span>{copy.pay(withGst(rupees(order.amount)))}</span>
             </TextLink>
           )}
         </>

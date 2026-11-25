@@ -58,7 +58,7 @@ describe("a booking held on its link, on Home", () => {
     );
     expect(page.textContent).toContain(copy.line("first fit", "Sun 22 Nov at 10 am", copy.thatDay("7 am")));
     expect(page.querySelector("a")?.getAttribute("href")).toBe("https://rzp.io/i/held");
-    expect(page.textContent).toContain(copy.pay("Rs. 21,500"));
+    expect(page.textContent).toContain(copy.pay("Rs. 21,500 including GST"));
   });
 
   // Held for a visit booked days ahead, it ends on an earlier day, which is named.

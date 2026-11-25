@@ -10,11 +10,6 @@
 
 .lede,
 .description,
-.gst {
-  margin: 0;
-  color: var(--ink-500);
-}
-
 .lede {
   font-size: var(--fs-15);
 }
@@ -78,8 +73,4 @@
   color: var(--ink-500);
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
-}
-
-.gst {
-  font-size: var(--fs-13);
 }

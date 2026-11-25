@@ -5,7 +5,7 @@ import { fullDate, indiaClock, indiaDate, listDate, shortDate } from "@maneman/w
 import { rupees } from "@maneman/web-kit/money";
 import type { BadgeTone } from "@maneman/ui/Badge";
 import type { CreditLine, Entry, EntryDetail } from "../api.ts";
-import { payments, VISIT_TYPES } from "../content.ts";
+import { payments, VISIT_TYPES, withGst } from "../content.ts";
 import { visitName } from "../lib/visit.ts";
 
 type PaymentEntry = Extract<Entry, { kind: "payment" }>;
@@ -66,7 +66,7 @@ export function entryMeta(entry: Entry, thisYear: number): string {
 
 /** The main figure: what was paid, GST included, or for a refund the money coming back, "+ Rs. 1,000". */
 export const entryAmount = (entry: Entry) =>
-  entry.kind === "refund" ? payments.moneyBack(rupees(entry.amount)) : rupees(entry.amount);
+  entry.kind === "refund" ? payments.moneyBack(rupees(entry.amount)) : withGst(rupees(entry.amount));
 
 /** A charge's evidence: "You cancelled at 9:14 am, for a visit at 10 am", "on 16 Aug at 3:35 pm" on different days. */
 export function chargeEvidence(charge: NonNullable<Extract<Entry, { kind: "payment" }>["charge"]>): string {

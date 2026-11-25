@@ -42,11 +42,12 @@ export const booking = {
     change: "Switch",
     /** "Upgrade from Mane Man Active to Mane Man Natural". */
     from: (how: string, worn: string, chosen: string) => `${how} from ${worn} to ${chosen}`,
-    /** "Rs. 18,000 with its fitting, lasts 6 months." */
-    costs: (amount: string, months: number) => `${amount} with its fitting, lasts ${String(months)} months.`,
-    serviceStays: (amount: string, every: string) => `Service stays ${amount} ${every}.`,
+    /** "Rs. 18,000 with its fitting, including GST. Lasts 6 months." */
+    costs: (amount: string, months: number) =>
+      `${amount} with its fitting, including GST. Lasts ${String(months)} months.`,
+    serviceStays: (amount: string, every: string) => `Service stays ${amount} ${every}, including GST.`,
     serviceChanges: (was: string, wasEvery: string, now: string, nowEvery: string) =>
-      `Service changes from ${was} ${wasEvery} to ${now} ${nowEvery}, from your first service after the fitting.`,
+      `Service changes from ${was} ${wasEvery} to ${now} ${nowEvery}, including GST, from your first service after the fitting.`,
     /** The old package's hair system is stock, for any client it fits, and nobody pays for it. */
     oldBack: (worn: string) => `Any ${worn} hair system ordered for you goes back to stock, at no cost to you.`,
     carries: "Your colour, density and hairline carry over.",
@@ -172,7 +173,7 @@ export const booking = {
     changeAddress: "Change",
     total: "Total",
     /** Once GST applies, the total says it is in it. */
-    totalWithGst: "Total, incl. GST",
+    totalWithGst: "Total, including GST",
     payment: "Payment",
     razorpay: "Pay by UPI, card, netbanking or wallet on Razorpay’s secure checkout. Saved methods appear there.",
     /** Checkout closed with nothing paid. */
@@ -293,7 +294,7 @@ export const booking = {
     dayBefore: "Confirmed the day before",
     address: "Address",
     payment: "Payment",
-    paid: (amount: string) => `${amount} paid`,
+    paid: (amount: string) => `${amount} paid, including GST`,
     credit: "Free service visit",
     carriedOver: "Carried over",
     free: "Free",
