@@ -8,6 +8,8 @@ import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { rupees } from "../../packages/web-kit/money.ts";
+import { assertInContract } from "../contract.ts";
 
 /** Home, with the hair system fitted at the first fit and one alert unread. */
 async function wearing(page: Page): Promise<{ next: string }> {
@@ -54,6 +56,29 @@ test("Home shows the hair system worn, its own page every one worn, and the four
   await expect(essential.getByText(appCopy.includingGst, { exact: true })).toBeVisible();
   await expect(essential.getByText(copy.everyWithGst(30), { exact: true })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("Your hair system gives its service visit's price, GST in it", async ({ page }) => {
+  await wearing(page);
+  const me = await page.evaluate(
+    async () => (await fetch("/api/me")).json() as Promise<{ booking: { services: { type: string; tier: string }[] } }>,
+  );
+  const price = { amount: 236_000, amount_ex_gst: 200_000, gst_percent: 18 };
+  const essential = {
+    type: "service",
+    tier: "essential",
+    name: "Service visit",
+    description: null,
+    minutes: 90,
+    price,
+  };
+  const others = me.booking.services.filter((each) => !(each.type === "service" && each.tier === "essential"));
+  const body = { ...me, booking: { ...me.booking, services: [...others, essential] } };
+  assertInContract("client", "GET", "/api/me", 200, body);
+  await page.unroute("**/api/me");
+  await page.route("**/api/me", (route) => route.fulfill({ json: body }));
+  await page.goto("/hair-system");
+  await expect(page.getByText(appCopy.hairSystems.perVisit(rupees(236_000)), { exact: true })).toBeVisible();
 });
 
 test("the bell counts the alerts unread, and the inbox opens what each is about, marking them read", async ({
