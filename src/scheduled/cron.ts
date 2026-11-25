@@ -29,14 +29,6 @@ import { closeStaleLowStock } from "../domain/inventory/low-stock.ts";
 import { settleOwedRefunds } from "../domain/money/cancel-refunds.ts";
 import { settleOwedNoShowRefunds } from "../domain/no-shows/after-a-ruling.ts";
 import { retellUndelivered } from "../domain/platform/alerts.ts";
-import { tellOfExpiring, tellOfOverdue } from "../domain/inventory/stock-watch.ts";
-import { refreshStockRisks } from "../domain/inventory/stock-risks.ts";
-import { measureLastForecast } from "../domain/purchasing/forecast-accuracy.ts";
-import { runForecastIfDue } from "../domain/purchasing/forecast.ts";
-import { draftPlan } from "../domain/purchasing/supply-plan.ts";
-import { checkTomorrowsKits } from "../domain/inventory/kit-check.ts";
-import { raiseCountTasks } from "../domain/inventory/cycle-counts.ts";
-import { classDaysOf } from "../policy/cycle-counts.ts";
 import { jobsLastWell } from "../domain/platform/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/privacy/deletion.ts";
 import { recordUtilisation } from "../domain/dispatch/dispatch-utilisation.ts";
@@ -85,6 +77,15 @@ import { placePincodeCentres } from "../domain/cities/pincode-centres.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { techAlertsJob } from "./tech-alerts.ts";
+import {
+  cycleCountsJob,
+  expiringStockJob,
+  forecastAccuracyJob,
+  forecastJob,
+  kitCheckJob,
+  overdueTransfersJob,
+  stockRisksJob,
+} from "./stock-jobs.ts";
 import { clientAlertsJob } from "./client-alerts.ts";
 
 export interface CronContext {
@@ -100,38 +101,6 @@ export interface CronContext {
   /** For a job held to a slot, the slot it runs for: when it began, and India's date then. */
   readonly slot?: { readonly start: Date; readonly date: string } | undefined;
 }
-
-/** The fits booked ahead with no hair system in reach, kept as tasks each hour (src/domain/inventory/stock-risks.ts). */
-async function stockRisksJob({ env, deps, inputs }: CronContext): Promise<void> {
-  const now = deps.now();
-  await refreshStockRisks(env.DB, indiaDate(now), now, (await inputs()).stockWatch.demand_days);
-}
-
-/** How right the last forecast was, once its first period has passed (src/domain/purchasing/forecast-accuracy.ts). */
-const forecastAccuracyJob = ({ env, deps }: CronContext) =>
-  measureLastForecast(env.DB, deps.now(), indiaDate(deps.now()));
-
-/** Once each planning period: the demand forecast, and the supply plan drafted from it. */
-async function forecastJob({ env, deps, inputs }: CronContext): Promise<void> {
-  const now = deps.now();
-  const given = await inputs();
-  const run = await runForecastIfDue(env.DB, now, given);
-  if (run !== null) await draftPlan(env.DB, run, now, given.planningPeriodDays);
-}
-
-/** Each evening hour: tomorrow's kits, and their top-ups (src/domain/inventory/kit-check.ts). */
-const kitCheckJob = async ({ env, deps, inputs }: CronContext) =>
-  checkTomorrowsKits(env.DB, deps.now(), deps.alertOnce, (await inputs()).kitCheck);
-
-/** The morning's cycle counts (src/domain/inventory/cycle-counts.ts). */
-const cycleCountsJob = async ({ env, deps, inputs, slot }: CronContext) =>
-  raiseCountTasks(env.DB, slot?.date ?? indiaDate(deps.now()), deps.now(), classDaysOf((await inputs()).cycleCounts));
-
-/** The morning's stock that expires soon, and transfers long on their way (src/domain/inventory/stock-watch.ts). */
-const expiringStockJob = async ({ env, deps, inputs, slot }: CronContext) =>
-  tellOfExpiring(env.DB, deps, slot?.date ?? indiaDate(deps.now()), (await inputs()).stockWatch.expiry_warning_days);
-const overdueTransfersJob = async ({ env, deps, inputs }: CronContext) =>
-  tellOfOverdue(env.DB, deps, deps.now(), (await inputs()).stockWatch.transfer_overdue_days);
 
 /**
  * A job held to a slot that has not run well for its period and two hours more, told once (./schedule.ts). Its next
