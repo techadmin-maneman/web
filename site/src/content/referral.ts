@@ -374,7 +374,7 @@ export const referral = {
     when: "{day}, {hours}",
     body: "Your technician arrives in those hours. Details are on WhatsApp at +91 {mobile}.",
     ready: {
-      consultation: `${capitalised(visitLength.consultation)} at home, and free. Nothing is fitted.`,
+      consultation: `${capitalised(visitLength.consultation)} at home, and free. If you go ahead and your hair system is in the technician’s kit, you can be fitted the same day.`,
       oneVisit: `${capitalised(visitLength.firstFit)} at home. Paid through a Razorpay link once you’re fitted.`,
     },
     calendar: {

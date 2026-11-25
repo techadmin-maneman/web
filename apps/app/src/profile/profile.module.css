@@ -238,8 +238,6 @@ a.secondary {
 /* Your data's two rows, between hairlines. */
 .rows {
   margin-top: var(--sp-4);
-  border-top: var(--hairline) solid var(--line-200);
-  border-bottom: var(--hairline) solid var(--line-200);
 }
 
 /* Deletion's first step, the width of the page, in red's outline. */
