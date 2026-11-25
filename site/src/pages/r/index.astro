@@ -24,7 +24,8 @@ import { TURNSTILE_SITE_KEYS } from "../../lib/turnstile.ts";
   <!-- The next page is told the site it came from, not the invite's code (docs/decisions/0023-launch-hardening.md). -->
   <meta slot="head" name="referrer" content="strict-origin" />
   <!-- data-invite carries the invite the Worker looked up; empty where it could not, so the island asks. -->
+  <!-- It wakes once the page is idle: its scripts would otherwise queue ahead of the card, the largest paint. -->
   <div id="invite" data-invite="">
-    <Landing client:load turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
+    <Landing client:idle turnstileSiteKey={TURNSTILE_SITE_KEYS[ENVIRONMENT]} allowStateSwitch={!IS_PRODUCTION} />
   </div>
 </Site>

@@ -11,7 +11,7 @@ import { guides } from "../../../site/src/content/guides.ts";
 import { referral } from "../../../site/src/content/referral.ts";
 import * as site from "../../../site/src/content/site.ts";
 import { siteEnvironment } from "../../../site/src/lib/environment.ts";
-import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../../site/src/lib/invite.ts";
+import { HOUSE_CARD, HOUSE_CARD_PAGE, HOUSE_CARD_VERSION } from "../../../site/src/lib/invite.ts";
 import { publishProblems } from "../../../site/src/lib/publish-gate.ts";
 import { headersFile, robotsFile } from "../../../site/src/lib/static-files.ts";
 import { fill } from "../../../site/src/lib/text.ts";
@@ -498,5 +498,12 @@ describe("site helpers", () => {
       CARDS[HOUSE_CARD_VERSION],
     );
     expect(HOUSE_CARD).toBe(`/images/invite-house.jpg?v=${String(HOUSE_CARD_VERSION)}`);
+  });
+
+  // The card is the invite page's largest paint on a phone; previews keep the JPEG every chat reads.
+  it("draws the house card on the invite's page from its WebP, the lighter file, under the same version", () => {
+    expect(HOUSE_CARD_PAGE).toBe(`/images/invite-house.webp?v=${String(HOUSE_CARD_VERSION)}`);
+    const webp = statSync("site/public/images/invite-house.webp").size;
+    expect(webp).toBeLessThan(statSync("site/public/images/invite-house.jpg").size / 2);
   });
 });

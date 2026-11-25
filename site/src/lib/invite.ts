@@ -2,7 +2,7 @@
 // landing's island, which reads it back. Neither trusts an answer it cannot read: an invite that fails the check is
 // treated as one that did not arrive, and the island asks for it again.
 
-import { HOUSE_CARD, HOUSE_CARD_VERSION } from "@rules/config/house-card.ts";
+import { HOUSE_CARD, HOUSE_CARD_PAGE, HOUSE_CARD_VERSION } from "@rules/config/house-card.ts";
 import type { Invite } from "./api.ts";
 import { INVITE_CODE } from "@rules/config/invite-codes.ts";
 
@@ -13,7 +13,7 @@ export const INVITE_PATH = new RegExp(`^/r/(${INVITE_CODE})/?$`);
 export const INVITE_PATH_IN_URL = new RegExp(`/r/${INVITE_CODE}/?(?=[?#]|$)`);
 
 /** The house card, with its version, which the API's preview redirects to as well (src/config/house-card.ts). */
-export { HOUSE_CARD, HOUSE_CARD_VERSION };
+export { HOUSE_CARD, HOUSE_CARD_PAGE, HOUSE_CARD_VERSION };
 
 /** Every state the API can answer. Listing them as keys makes a new state in the contract a type error here. */
 const STATES = { valid: true, unknown: true } satisfies Record<Invite["state"], true>;
