@@ -87,6 +87,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   client_push_subscriptions:
     "The session that takes a client's pushes, one subscription a session, by the push service's address; a session signed out, revoked or ended takes none (ADR 0255).",
   care_names: "The first name each Care team member is known by to clients, as their Support card shows it (ADR 0136).",
+  staff_push_subscriptions:
+    "The phones that take a Care person's unanswered-lead pushes, one subscription a phone, by the push service's address (ADR 0323).",
+  lead_alert_pushes:
+    "Each lead's wait already pushed to Care on shift, kept a week, so a lead is pushed once (ADR 0323).",
   tech_alert_kinds_off: "The kinds of alert a technician turned off; every kind is on until then (ADR 0250).",
   tech_alerts:
     "A technician's alerts, the inbox the phone reads over the last seven days: time to leave, the day ahead, a job moved, called off or given to another, and running over; when each was pushed and read (ADR 0250).",

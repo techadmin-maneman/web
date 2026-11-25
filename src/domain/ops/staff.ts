@@ -297,6 +297,7 @@ export async function deleteStaffMember(
   const { email, before, actor, requestId, now } = input;
   await db.batch([
     db.prepare("DELETE FROM staff_grants WHERE email = ?1").bind(email),
+    db.prepare("DELETE FROM staff_push_subscriptions WHERE email = ?1").bind(email),
     db.prepare("DELETE FROM staff WHERE email = ?1").bind(email),
     auditStatement(
       db,

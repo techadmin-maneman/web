@@ -97,11 +97,11 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost",
   },
   {
-    what: "A client's alerts in their app, and the sessions that take their pushes",
-    tables: ["client_app_alerts", "client_push_subscriptions"],
+    what: "A client's alerts in their app, Care's lead alerts, and the browsers that take their pushes",
+    tables: ["client_app_alerts", "client_push_subscriptions", "staff_push_subscriptions", "lead_alert_pushes"],
     leftAtT:
       "An alert written since is gone from the inbox, and one read since is new again; a browser that allowed pushes since takes none",
-    putBackBy: "Nothing: the messages since stay in WhatsApp, and the app subscribes again when it next opens",
+    putBackBy: "Nothing: the messages since stay in WhatsApp, and each app or console subscribes on opening",
   },
   {
     what: "A technician's alerts, the kinds they turned off, and the phones that take their pushes",

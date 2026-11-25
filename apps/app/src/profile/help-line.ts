@@ -10,7 +10,7 @@ export function helpLine({ care_person, care_hours }: Pick<Profile, "care_person
   const copy = profile.support;
   const hint = copy.hint(
     copy.within(care_hours.first_reply),
-    copy.hours(copy.hour(care_hours.opens), copy.hour(care_hours.closes)),
+    copy.hours(copy.time(care_hours.opens_minute), copy.time(care_hours.closes_minute)),
   );
   return care_person === null ? hint : copy.named(care_person, hint);
 }

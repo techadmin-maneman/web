@@ -1,0 +1,9 @@
+{
+  // The service worker runs in a worker, not a page: its own types, without the DOM's.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "WebWorker"],
+    "types": []
+  },
+  "include": ["sw.ts"]
+}

@@ -6,6 +6,7 @@ import { axeViolations } from "../a11y.ts";
 import { open } from "./settings-fixtures.ts";
 import type { SettingsTab } from "../../apps/ops/src/route.ts";
 import { states } from "../../apps/ops/src/content.ts";
+import { settings } from "../../apps/ops/src/content/settings.ts";
 
 const PAGES = [
   "window-times",
@@ -28,3 +29,12 @@ for (const tab of PAGES) {
     expect(await axeViolations(page)).toEqual([]);
   });
 }
+
+// A group whose rules each hold several figures draws a panel for each rule and none for the group, which would be
+// empty: Care hours shows Customer Care hours, Remedies without approval and WhatsApp refused, under no empty heading.
+// Read from the local API, whose rules are the register's own.
+test("draws no empty panel above a group of rules that each hold several figures", async ({ page }) => {
+  await page.goto("/settings/care-hours");
+  await expect(page.getByRole("region", { name: "Customer Care hours", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: settings.rules.groups.care, exact: true })).toHaveCount(0);
+});

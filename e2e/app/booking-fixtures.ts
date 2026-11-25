@@ -124,7 +124,7 @@ export function profileOf({ reminders = false, undecided = [], address = true }:
   const answer = { name: "Rohit Malhotra", mobile: "+91 98xxx x4417", consents };
   const rest = {
     care_person: null,
-    care_hours: { opens: 9, closes: 21, first_reply: 60 },
+    care_hours: { opens: 9, closes: 21, opens_minute: 540, closes_minute: 1260, first_reply: 60 },
     address_given_to_ops: null,
     address_pinned: true,
     number_change: null,

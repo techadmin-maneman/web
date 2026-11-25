@@ -8,7 +8,8 @@
 //   node scripts/build/make-house-card.ts
 //
 // Writes site/public/images/invite-house.jpg, which the invite's Open Graph tags point at, the same file into the
-// app, whose invite preview shows it, and the overlay into src/config/card-overlay.ts. Chats cache a preview by
+// app, whose invite preview shows it, the card in WebP beside it for the invite's own page, and the overlay into
+// src/config/card-overlay.ts. Chats cache a preview by
 // its address, so a house card that changes needs a new HOUSE_CARD_VERSION in site/src/lib/invite.ts;
 // test/node/site/site-content.test.ts says so.
 
@@ -28,6 +29,8 @@ const { module: layout } = await runnerImport<typeof import("../../apps/app/src/
 const { CARD_HEIGHT, CARD_WIDTH, HALF_WIDTH, lockupPlaces, RULE_WIDTH } = layout;
 
 const OUTPUTS = ["site/public/images/invite-house.jpg", "apps/app/src/refer/invite-house.jpg"];
+/** The card the invite's page draws (HOUSE_CARD_PAGE in src/config/house-card.ts). */
+const PAGE_OUTPUT = "site/public/images/invite-house.webp";
 const OVERLAY_MODULE = "src/config/card-overlay.ts";
 
 /** A brand drawing in its place, as the design's SVGs draw it: whole, centred, in one colour. */
@@ -65,8 +68,10 @@ const card = svg(`<rect width="${String(CARD_WIDTH)}" height="${String(CARD_HEIG
 // Full colour resolution: halved, as JPEG usually stores it, a rule 2 px wide comes out grey.
 const jpeg = await sharp(new TextEncoder().encode(card)).jpeg({ quality: 82, chromaSubsampling: "4:4:4" }).toBuffer();
 for (const output of OUTPUTS) writeFileSync(output, jpeg);
+const webp = await sharp(new TextEncoder().encode(card)).webp({ quality: 80 }).toBuffer();
+writeFileSync(PAGE_OUTPUT, webp);
 console.log(
-  `house card: ${String(Math.round(jpeg.byteLength / 1024))} KB, ${String(CARD_WIDTH)}x${String(CARD_HEIGHT)}`,
+  `house card: ${String(Math.round(jpeg.byteLength / 1024))} KB, ${String(Math.round(webp.byteLength / 1024))} KB in WebP, ${String(CARD_WIDTH)}x${String(CARD_HEIGHT)}`,
 );
 
 const overlay = await sharp(new TextEncoder().encode(svg(marks)))

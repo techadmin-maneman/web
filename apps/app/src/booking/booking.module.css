@@ -115,6 +115,8 @@
 .suggest {
   --ui-raised: var(--wash-100);
   --row-pad-x: var(--sp-16);
+  /* A wash tile, unruled, as the design draws it. */
+  --list-edge-block: 0;
 
   margin-top: var(--sp-4);
 }
@@ -484,6 +486,4 @@
 /* The ways to change a visit, as the design lists them: rows between hairlines. */
 .changeRows {
   margin-top: var(--sp-8);
-  border-top: var(--hairline) solid var(--line-200);
-  border-bottom: var(--hairline) solid var(--line-200);
 }

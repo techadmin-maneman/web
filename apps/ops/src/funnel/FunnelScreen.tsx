@@ -3,7 +3,9 @@
 // revenue after their first fit, and what clients told ops; by the client's channel or their last touch's, for every
 // channel or one. The Zoho Analytics dashboards beyond it (src/domain/analytics/acquisition.ts).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { BarChart } from "@maneman/ui/BarChart";
+import { Button } from "@maneman/ui/Button";
 import { Split } from "@maneman/ui/Layout";
 import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { roundRupees, rupees } from "@maneman/web-kit/money";
@@ -20,12 +22,16 @@ import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
 import { CHANNEL_CODES, CHANNELS } from "@rules/policy/channels.ts";
 import { useCallback, useState } from "react";
-import { useHeaderSub } from "../frame/PageHead.tsx";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
+import { csvText } from "../lib/csv.ts";
+import { saveFile } from "../lib/save-file.ts";
 import form from "@maneman/ui/forms.module.css";
 import styles from "./funnel.module.css";
 import { funnel as copy } from "../content/funnel.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { ChannelFigures, Cohorts, Heard } from "./FunnelTables.tsx";
+import { funnelCsvRows } from "./funnel-csv.ts";
+import { ToFitted } from "./ToFitted.tsx";
 import { funnelApi, type Acquisition, type ChannelBy, type ChannelCode, type Period } from "./funnel-api.ts";
 
 function Steps({ figures }: { figures: Acquisition }) {
@@ -161,6 +167,24 @@ function Asking({ asked, onAsk }: { asked: Asked; onAsk: (asked: Asked) => void 
   );
 }
 
+/** The period's two tables as a CSV, from what the page read. */
+function DownloadCsv({ figures }: { figures: Acquisition }) {
+  return (
+    <PageActions>
+      <Button
+        icon={ACTION_ICONS.download}
+        variant="outline"
+        size="small"
+        onClick={() => {
+          saveFile(copy.csv.fileName(figures.period, figures.from), csvText(funnelCsvRows(figures)), "text/csv");
+        }}
+      >
+        {copy.csv.download}
+      </Button>
+    </PageActions>
+  );
+}
+
 export function FunnelScreen() {
   const [asked, setAsked] = useState<Asked>({
     period: "week",
@@ -177,6 +201,7 @@ export function FunnelScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <>
+          <DownloadCsv figures={loaded.value} />
           <Counted figures={loaded.value} />
           {/* The steps beside what the period spent and what its first fits brought back, as the redesign draws them. */}
           <Split look="wide">
@@ -184,6 +209,7 @@ export function FunnelScreen() {
             <Returns figures={loaded.value} />
           </Split>
           <ChannelFigures figures={loaded.value} />
+          <ToFitted figures={loaded.value} />
           <Cohorts figures={loaded.value} />
           <Heard figures={loaded.value} />
         </>

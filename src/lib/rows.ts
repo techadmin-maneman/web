@@ -760,6 +760,10 @@ export interface Rows {
     readonly visit_start: string | null;
     readonly consulted_start: string | null;
   };
+  readonly lead_alert_pushes: {
+    readonly lead: string;
+    readonly pushed_at: string;
+  };
   readonly leads: {
     readonly id: string;
     readonly person_id: string;
@@ -1593,6 +1597,11 @@ export interface Rows {
     readonly replaces: string | null;
     readonly taken_off_at: string | null;
     readonly taken_off_by: string | null;
+  };
+  readonly staff_push_subscriptions: {
+    readonly endpoint: string;
+    readonly email: string;
+    readonly subscribed_at: string;
   };
   readonly staff_service_tokens: {
     readonly client_id: string;

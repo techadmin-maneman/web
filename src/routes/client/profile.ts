@@ -24,6 +24,7 @@ import { CONSENT_PURPOSES } from "../../policy/consents.ts";
 import { DECISION_SHOWN_DAYS } from "../../policy/decision-reasons.ts";
 import { GRIEVANCES_SHOWN } from "../../policy/grievances.ts";
 import { AddressSchema } from "../schemas/address.ts";
+import { careHoursForClients } from "../../policy/care-hours.ts";
 import { numberChangeBody, NumberChangeSchema } from "../schemas/number-change.ts";
 
 const ProfileSchema = z
@@ -35,8 +36,16 @@ const ProfileSchema = z
     }),
     care_hours: z
       .object({
-        opens: z.number().int(),
-        closes: z.number().int(),
+        opens: z
+          .number()
+          .int()
+          .openapi({ description: "The hour Care open, rounded down, for app copies older than opens_minute." }),
+        closes: z
+          .number()
+          .int()
+          .openapi({ description: "The hour Care close, rounded down, for app copies older than closes_minute." }),
+        opens_minute: z.number().int().openapi({ description: "When Care open, in minutes past midnight in India." }),
+        closes_minute: z.number().int().openapi({ description: "When Care close, in minutes past midnight in India." }),
         first_reply: z.number().int().openapi({ description: "Minutes a message in those hours is answered within." }),
       })
       .strict()
@@ -175,11 +184,7 @@ export function registerClientProfile(app: App): void {
         name: person.name,
         mobile: maskedMobile(person.mobileE164),
         care_person: carePerson,
-        care_hours: {
-          opens: inputs.careHours.opens,
-          closes: inputs.careHours.closes,
-          first_reply: inputs.careHours.first_reply,
-        },
+        care_hours: careHoursForClients(inputs.careHours),
         address:
           address === null
             ? null

@@ -9880,7 +9880,7 @@ export interface paths {
                     starting?: string;
                     /** @description The client's channel, or their last touch's when each thing happened. */
                     by?: "first" | "last";
-                    channel?: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                    channel?: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
                 };
                 header?: never;
                 path?: never;
@@ -11892,6 +11892,142 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/leads/waiting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The leads past their alert time, the longest waiting first, and whether the caller is on Care shift */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The leads */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Whether the caller is on Care shift, whom the banner is for. */
+                            on_shift: boolean;
+                            leads: components["schemas"]["WaitingLead"][];
+                            /** @description The key a phone subscribes to pushes with; null where pushes are not set up. */
+                            push_key: string | null;
+                        };
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/leads/alerts-phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** This phone takes the caller's unanswered-lead pushes, by its push service's address */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        endpoint: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Kept */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: endpoint is not a push service's address */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_permitted: the caller is not on the Staff list */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -18341,7 +18477,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "drive_times" | "drive_learning" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+                    name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_times" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "drive_times" | "drive_learning" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
                 };
                 cookie?: never;
             };
@@ -31009,7 +31145,7 @@ export interface components {
             last_line: string | null;
             /** @description When the client last wrote, unanswered since; null when nothing waits on us. */
             waiting_since: string | null;
-            /** @description When our reply is due, by the Care hours ops set (care_hours); null when nothing waits on us. */
+            /** @description When our reply is due, by the Care hours ops set (care_times); null when nothing waits on us. */
             reply_by: string | null;
         };
         ThreadItem: {
@@ -31149,7 +31285,7 @@ export interface components {
         SpendList: {
             entries: components["schemas"]["SpendEntry"][];
             cities: string[];
-            channels: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone")[];
+            channels: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone")[];
             /**
              * Format: date
              * @description The earliest day an entry may be put on.
@@ -31171,7 +31307,7 @@ export interface components {
             /** @description Null for spend not aimed at one city. */
             city: string | null;
             /** @enum {string} */
-            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
             campaign: string | null;
             /** @description Paise, before GST. */
             amount: number;
@@ -31195,7 +31331,7 @@ export interface components {
             day: string;
             city: string | null;
             /** @enum {string} */
-            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
             /** @description As the campaign is named, starting with its city or with national. */
             campaign?: string;
             /** @description Paise, before GST. */
@@ -31233,7 +31369,7 @@ export interface components {
             by: "first" | "last";
             rows: {
                 /** @enum {string} */
-                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
                 /** @description Paise, before GST. */
                 spend: number;
                 /** @description Clients whose first lead came in the period. */
@@ -31244,6 +31380,25 @@ export interface components {
                 first_fits: number;
                 /** @description Paise, before GST, less refunds. */
                 first_fit_revenue: number;
+                steps: {
+                    /** @description Clients whose first fit was done in the period. */
+                    fitted: number;
+                    /** @description Consultations in the period closed as a no-show. */
+                    no_shows: number;
+                    /** @description Of the clients whose first lead came in the period, those fitted since. */
+                    leads_fitted: number;
+                    /** @description The middle first reply to those clients, in minutes counted in Care hours; null with none. */
+                    first_reply_minutes: number | null;
+                    tiers: {
+                        tier: string;
+                        clients: number;
+                    }[];
+                    /** @description Why the leads lost in the period were lost, the commonest three. */
+                    lost: {
+                        reason: string;
+                        clients: number;
+                    }[];
+                };
             }[];
             totals: {
                 /** @description Paise, before GST. */
@@ -31256,10 +31411,29 @@ export interface components {
                 first_fits: number;
                 /** @description Paise, before GST, less refunds. */
                 first_fit_revenue: number;
+                steps: {
+                    /** @description Clients whose first fit was done in the period. */
+                    fitted: number;
+                    /** @description Consultations in the period closed as a no-show. */
+                    no_shows: number;
+                    /** @description Of the clients whose first lead came in the period, those fitted since. */
+                    leads_fitted: number;
+                    /** @description The middle first reply to those clients, in minutes counted in Care hours; null with none. */
+                    first_reply_minutes: number | null;
+                    tiers: {
+                        tier: string;
+                        clients: number;
+                    }[];
+                    /** @description Why the leads lost in the period were lost, the commonest three. */
+                    lost: {
+                        reason: string;
+                        clients: number;
+                    }[];
+                };
             };
             cohorts: {
                 /** @enum {string} */
-                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
                 clients: number;
                 d30: number;
                 d90: number;
@@ -31274,7 +31448,7 @@ export interface components {
                 /** @enum {string} */
                 heard_from: "google" | "instagram_facebook" | "youtube" | "friend" | "society" | "salon_partner" | "whatsapp" | "flyer" | "other" | "not_asked";
                 /** @enum {string} */
-                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
                 clients: number;
             }[];
             /** @description First looks at the try-on in the period. */
@@ -31294,13 +31468,13 @@ export interface components {
              * @description Where the caller came from, as ops picked it.
              * @enum {string}
              */
-            channel: "google_ads" | "meta_ads" | "referral" | "partner" | "society" | "organic_search" | "organic_social" | "direct";
+            channel: "google_ads" | "meta_ads" | "referral" | "partner" | "society" | "organic_search" | "business_profile" | "organic_social" | "direct";
             /** @description Where they are, as they said: their city until they give an address. */
             pincode?: string;
         };
         ClientAttribution: {
-            attributed_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
-            last_touch_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
+            attributed_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
+            last_touch_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
             first_touch: components["schemas"]["TouchShown"] | null;
             last_touch: components["schemas"]["TouchShown"] | null;
             touches: number;
@@ -31328,7 +31502,7 @@ export interface components {
             /** @enum {string} */
             via: "site" | "whatsapp" | "call";
             /** @enum {string} */
-            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
             utm_source: string | null;
             utm_medium: string | null;
             utm_campaign: string | null;
@@ -31609,6 +31783,25 @@ export interface components {
                 /** @description The share of chats answered by their reply-by time, 0 to 1; null with none. */
                 within_target: number | null;
             }[];
+        };
+        WaitingLead: {
+            /** @description The chat waiting on Care's first reply. */
+            conversation_id: string;
+            /** @description Null for a number we don't know. */
+            person_id: string | null;
+            name: string | null;
+            /** @description The number the chat came from. */
+            mobile: string;
+            /**
+             * Format: date-time
+             * @description Their first message since the chat last opened.
+             */
+            since: string;
+            /**
+             * Format: date-time
+             * @description When it had waited the alert minutes in Care hours.
+             */
+            alert_at: string;
         };
         ReferralChannels: {
             channels: {
@@ -33314,7 +33507,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "drive_times" | "drive_learning" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_times" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "drive_times" | "drive_learning" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;
@@ -33347,7 +33540,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "drive_times" | "drive_learning" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_times" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "drive_times" | "drive_learning" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;

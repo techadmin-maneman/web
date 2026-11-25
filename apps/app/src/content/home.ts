@@ -186,7 +186,7 @@ export const home = {
     steps: [
       "Before photos, then your scalp and hairline are mapped.",
       "Your colour and style are matched, and the technician shows the hair systems that suit you.",
-      "If you go ahead, we book your first fit. Nothing is fitted on the day.",
+      "If you go ahead and your hair system is in the technician’s kit, you can be fitted the same day; if not, we book your first fit.",
     ],
   },
   /**

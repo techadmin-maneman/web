@@ -14,6 +14,7 @@ import {
 const NONE: Touch = {
   utmSource: null,
   utmMedium: null,
+  utmCampaign: null,
   gclid: null,
   gbraid: null,
   wbraid: null,
@@ -53,6 +54,13 @@ describe("a touch's channel", () => {
     expect(touchChannel({ ...NONE, utmSource: "salon", utmMedium: "offline" })).toBe("partner");
     expect(touchChannel({ ...NONE, utmSource: "bing" })).toBe("organic_search");
     expect(touchChannel({ ...NONE, utmSource: "youtube", utmMedium: "social" })).toBe("organic_social");
+  });
+
+  it("is Business Profile for the Google Business Profile's tagged link, and organic search untagged", () => {
+    const profile = { ...NONE, utmSource: "google", utmMedium: "organic", utmCampaign: "GBP" };
+    expect(touchChannel(profile)).toBe("business_profile");
+    expect(touchChannel({ ...profile, utmMedium: "cpc" })).toBe("google_ads");
+    expect(touchChannel({ ...NONE, referrer: "https://www.google.com/" })).toBe("organic_search");
   });
 
   it("falls to the page before: a search engine, a social site, another site; ours and the payment page are none", () => {

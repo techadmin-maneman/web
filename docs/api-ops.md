@@ -16016,6 +16016,180 @@ Whether the same-day promise holds: reply times, same-day closes, the backlog, r
 }
 ```
 
+### GET /api/leads/waiting
+
+The leads past their alert time, the longest waiting first, and whether the caller is on Care shift
+
+**200**: The leads
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "on_shift": {
+      "type": "boolean",
+      "description": "Whether the caller is on Care shift, whom the banner is for."
+    },
+    "leads": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/WaitingLead"
+      }
+    },
+    "push_key": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The key a phone subscribes to pushes with; null where pushes are not set up."
+    }
+  },
+  "required": [
+    "on_shift",
+    "leads",
+    "push_key"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/leads/alerts-phone
+
+This phone takes the caller's unanswered-lead pushes, by its push service's address
+
+Request body:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "type": "string",
+      "maxLength": 2048
+    }
+  },
+  "required": [
+    "endpoint"
+  ],
+  "additionalProperties": false
+}
+```
+
+**204**: Kept
+
+**400**: invalid_request: endpoint is not a push service's address
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: not_permitted: the caller is not on the Staff list
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/referral-channels
 
 Every partner, with what has come through each
@@ -48973,7 +49147,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "When our reply is due, by the Care hours ops set (care_hours); null when nothing waits on us."
+      "description": "When our reply is due, by the Care hours ops set (care_times); null when nothing waits on us."
     }
   },
   "required": [
@@ -49692,6 +49866,7 @@ Request body:
           "meta_ads",
           "referral",
           "organic_search",
+          "business_profile",
           "direct",
           "partner",
           "society",
@@ -49769,6 +49944,7 @@ Request body:
         "meta_ads",
         "referral",
         "organic_search",
+        "business_profile",
         "direct",
         "partner",
         "society",
@@ -49896,6 +50072,7 @@ Request body:
         "meta_ads",
         "referral",
         "organic_search",
+        "business_profile",
         "direct",
         "partner",
         "society",
@@ -50045,6 +50222,7 @@ Request body:
               "meta_ads",
               "referral",
               "organic_search",
+              "business_profile",
               "direct",
               "partner",
               "society",
@@ -50075,6 +50253,82 @@ Request body:
           "first_fit_revenue": {
             "type": "integer",
             "description": "Paise, before GST, less refunds."
+          },
+          "steps": {
+            "type": "object",
+            "properties": {
+              "fitted": {
+                "type": "integer",
+                "description": "Clients whose first fit was done in the period."
+              },
+              "no_shows": {
+                "type": "integer",
+                "description": "Consultations in the period closed as a no-show."
+              },
+              "leads_fitted": {
+                "type": "integer",
+                "description": "Of the clients whose first lead came in the period, those fitted since."
+              },
+              "first_reply_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The middle first reply to those clients, in minutes counted in Care hours; null with none."
+              },
+              "tiers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tier": {
+                      "type": "string"
+                    },
+                    "clients": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "tier",
+                    "clients"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "lost": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "reason": {
+                      "type": "string"
+                    },
+                    "clients": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "reason",
+                    "clients"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Why the leads lost in the period were lost, the commonest three."
+              }
+            },
+            "required": [
+              "fitted",
+              "no_shows",
+              "leads_fitted",
+              "first_reply_minutes",
+              "tiers",
+              "lost"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -50084,7 +50338,8 @@ Request body:
           "consults_booked",
           "consults_done",
           "first_fits",
-          "first_fit_revenue"
+          "first_fit_revenue",
+          "steps"
         ],
         "additionalProperties": false
       }
@@ -50113,6 +50368,82 @@ Request body:
         "first_fit_revenue": {
           "type": "integer",
           "description": "Paise, before GST, less refunds."
+        },
+        "steps": {
+          "type": "object",
+          "properties": {
+            "fitted": {
+              "type": "integer",
+              "description": "Clients whose first fit was done in the period."
+            },
+            "no_shows": {
+              "type": "integer",
+              "description": "Consultations in the period closed as a no-show."
+            },
+            "leads_fitted": {
+              "type": "integer",
+              "description": "Of the clients whose first lead came in the period, those fitted since."
+            },
+            "first_reply_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The middle first reply to those clients, in minutes counted in Care hours; null with none."
+            },
+            "tiers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tier": {
+                    "type": "string"
+                  },
+                  "clients": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "tier",
+                  "clients"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "lost": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "clients": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "reason",
+                  "clients"
+                ],
+                "additionalProperties": false
+              },
+              "description": "Why the leads lost in the period were lost, the commonest three."
+            }
+          },
+          "required": [
+            "fitted",
+            "no_shows",
+            "leads_fitted",
+            "first_reply_minutes",
+            "tiers",
+            "lost"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -50121,7 +50452,8 @@ Request body:
         "consults_booked",
         "consults_done",
         "first_fits",
-        "first_fit_revenue"
+        "first_fit_revenue",
+        "steps"
       ],
       "additionalProperties": false
     },
@@ -50137,6 +50469,7 @@ Request body:
               "meta_ads",
               "referral",
               "organic_search",
+              "business_profile",
               "direct",
               "partner",
               "society",
@@ -50216,6 +50549,7 @@ Request body:
               "meta_ads",
               "referral",
               "organic_search",
+              "business_profile",
               "direct",
               "partner",
               "society",
@@ -50306,6 +50640,7 @@ Request body:
         "partner",
         "society",
         "organic_search",
+        "business_profile",
         "organic_social",
         "direct"
       ],
@@ -50341,6 +50676,7 @@ Request body:
             "meta_ads",
             "referral",
             "organic_search",
+            "business_profile",
             "direct",
             "partner",
             "society",
@@ -50364,6 +50700,7 @@ Request body:
             "meta_ads",
             "referral",
             "organic_search",
+            "business_profile",
             "direct",
             "partner",
             "society",
@@ -50604,6 +50941,7 @@ Request body:
         "meta_ads",
         "referral",
         "organic_search",
+        "business_profile",
         "direct",
         "partner",
         "society",
@@ -52098,6 +52436,64 @@ Request body:
     "reasons",
     "remedies",
     "by_person"
+  ],
+  "additionalProperties": false
+}
+```
+
+### WaitingLead
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "conversation_id": {
+      "type": "string",
+      "description": "The chat waiting on Care's first reply."
+    },
+    "person_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for a number we don't know."
+    },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mobile": {
+      "type": "string",
+      "description": "The number the chat came from."
+    },
+    "since": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Their first message since the chat last opened."
+    },
+    "alert_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When it had waited the alert minutes in Care hours."
+    }
+  },
+  "required": [
+    "conversation_id",
+    "person_id",
+    "name",
+    "mobile",
+    "since",
+    "alert_at"
   ],
   "additionalProperties": false
 }
@@ -59322,7 +59718,7 @@ Request body:
         "technician_work",
         "booking_days",
         "referral_reward",
-        "care_hours",
+        "care_times",
         "remedy_limit",
         "lost_after_days",
         "booking_rules",
@@ -59528,7 +59924,7 @@ Request body:
         "technician_work",
         "booking_days",
         "referral_reward",
-        "care_hours",
+        "care_times",
         "remedy_limit",
         "lost_after_days",
         "booking_rules",

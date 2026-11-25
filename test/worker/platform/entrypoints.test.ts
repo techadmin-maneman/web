@@ -191,6 +191,7 @@ describe("scheduled handler", () => {
     });
     const summary = logs.lines().find((line) => line.event === "cron_run");
     expect(Object.keys(summary?.d1_rows_read_by_job as object)).toEqual([
+      "lead_alerts",
       "unbooked_holds",
       "visits_not_begun",
       "books_sync",

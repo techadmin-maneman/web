@@ -61,6 +61,7 @@ import { forPackage } from "../../policy/services.ts";
 import { cityOfPerson } from "../../domain/cities/cities.ts";
 import { selfServeKinds } from "../../policy/self-serve.ts";
 import { unreadClientAlerts } from "../../domain/clients/app-alerts.ts";
+import { careHoursForClients } from "../../policy/care-hours.ts";
 import { openIssueCount } from "../../domain/care/issue-log.ts";
 
 /** The words the first booked page had for a window. It had none for the afternoon. */
@@ -158,9 +159,8 @@ async function homeFactsOf(c: Context<AppEnv>, personId: string, now: Date) {
  * words.
  */
 function promisesOf(inputs: OpsInputs) {
-  const { opens, closes, first_reply } = inputs.careHours;
   return {
-    care_hours: { opens, closes, first_reply },
+    care_hours: careHoursForClients(inputs.careHours),
     guarantee_days: inputs.guaranteeDays,
     answers_within: {
       grievance_days: GRIEVANCE_ANSWERED_WITHIN_DAYS,

@@ -293,6 +293,13 @@ export const care = {
     you: { on: (since: string) => `On shift since ${since}.`, off: "Off shift." },
     goOn: "Go on shift",
     goOff: "Go off shift",
+    /** A new lead's alert on the device the console is open on, while on shift (ADR 0323). */
+    alerts: {
+      turnOn: "Turn on lead alerts here",
+      on: "Lead alerts are on here.",
+      blocked: "This browser blocks the console’s alerts. Allow them in its settings.",
+      failed: "Lead alerts couldn’t be turned on. Try again.",
+    },
     addLeave: "Add leave",
     addLeaveLabel: (email: string) => `Add leave for ${email}`,
     from: "From",

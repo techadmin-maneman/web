@@ -92,7 +92,7 @@ function LeadRows({ me }: { me: Me }) {
             ? undefined
             : support.hint(
                 support.within(hours.first_reply),
-                support.hours(support.hour(hours.opens), support.hour(hours.closes)),
+                support.hours(support.time(hours.opens_minute), support.time(hours.closes_minute)),
               )
         }
         href={whatsappChat(whatsapp.number)}

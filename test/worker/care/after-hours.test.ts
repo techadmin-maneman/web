@@ -17,7 +17,7 @@ const EVOLUTION: NonNullable<Settings["messaging"]["evolution"]> = {
   instance: "maneman",
   webhookToken: TOKEN,
 };
-const ANSWER = "Thank you for your message.\nWe're back at 9 am tomorrow and will reply by 10 am.";
+const ANSWER = "Thank you for your message.\nWe're back at 9:30 am tomorrow and will reply by 10 am.";
 
 let sent: { to: string; text: string }[];
 
@@ -89,7 +89,7 @@ describe("the after-hours answer", () => {
   it("says Care are back tomorrow, or, to a message after midnight, at the hour that morning", async () => {
     await written("Up late", "2026-10-13", "01:30");
     expect(sent).toEqual([
-      { to: "+919810000001", text: "Thank you for your message.\nWe're back at 9 am and will reply by 10 am." },
+      { to: "+919810000001", text: "Thank you for your message.\nWe're back at 9:30 am and will reply by 10 am." },
     ]);
   });
 

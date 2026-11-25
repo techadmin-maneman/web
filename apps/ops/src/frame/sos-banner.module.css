@@ -18,6 +18,20 @@
   background: var(--ui-raised);
 }
 
+/* A lead waiting (./LeadBanner.tsx): the SOS banner's shape in the attention colour, so an SOS stays the one in red. */
+.attention {
+  border-left-color: var(--status-attention);
+}
+
+.attention .title {
+  color: var(--status-attention);
+}
+
+/* Its words take the row, so its one link keeps its place at the end however the title wraps. */
+.attention .what {
+  flex: 1 1 0;
+}
+
 .what {
   min-width: 0;
 }

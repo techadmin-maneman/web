@@ -196,7 +196,7 @@ this map, or when the map names something that no longer exists.
 
 ### Leads and the CRM
 
-- **Database work** (`src/domain/leads/`): `leads`, `lead-notice`, `lead-stages`
+- **Database work** (`src/domain/leads/`): `leads`, `lead-notice`, `lead-stages`, `waiting-leads`, `lead-alerts`
 - **Data** (`src/config/`): `crm`, `pipeline`
 - **Vendor** (`src/providers/`): `crm/`
 - **Jobs** (`src/queues/`): `crm-sync`
@@ -258,7 +258,7 @@ this map, or when the map names something that no longer exists.
 
 ### Reports
 
-- **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `acquisition` (the Funnel page's figures),
+- **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `acquisition` (the Funnel page's figures), `funnel-steps` (its steps from lead to fitted),
   `target-progress` (how far each city has come towards the month's targets), `rows`
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
   `care-cases` (grievances and tasks, opened and closed), `leads`, `spend` (offline spend, partner payments and

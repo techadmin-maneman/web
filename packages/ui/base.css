@@ -221,6 +221,9 @@
     --document-hover: var(--paper-shade);
     /* A list of rows on a phone (./ListRow.tsx): its edge, and its rows' lead column, title and second line. */
     --list-edge: var(--hairline) solid var(--ui-line);
+    /* Its rules above the first row and below the last, where a look draws them apart from its box: unset here, so
+       each list falls back to its own edge (./list-row.module.css). */
+    --list-edge-block: initial;
     /* How far a row's words sit from the list's sides: none where the list runs the column's width, as the client's;
        and from its rules above and below. */
     --row-pad-x: var(--sp-16);

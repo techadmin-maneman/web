@@ -10,6 +10,7 @@
     { "path": "./apps/app/tsconfig.json" },
     { "path": "./apps/app/sw/tsconfig.json" },
     { "path": "./apps/ops/tsconfig.json" },
+    { "path": "./apps/ops/sw/tsconfig.json" },
     { "path": "./apps/tech/tsconfig.json" },
     { "path": "./apps/tech/sw/tsconfig.json" },
     { "path": "./packages/ui/tsconfig.json" },

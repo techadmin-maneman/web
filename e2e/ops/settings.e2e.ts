@@ -307,7 +307,7 @@ test.describe("the rules", () => {
       .getByRole("link", { name: settingsPageNames.referrals })
       .click();
     await expect(page).toHaveURL(/\/settings\/referrals$/);
-    await expect(section(page, "Referrals")).toBeVisible();
+    await expect(section(page, "Referral reward")).toBeVisible();
     await expect(page.getByRole("group", { name: cities.rules.names.checkin_radius_m })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
   });

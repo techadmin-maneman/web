@@ -3,7 +3,7 @@
 // as nought would be a radius no arrival passes.
 
 import { errorText } from "@maneman/web-kit/refusal";
-import { DAY_OF_WEEK, HOUR_OF_DAY } from "@rules/config/setting-units.ts";
+import { DAY_OF_WEEK, HOUR_OF_DAY, MINUTE_OF_DAY } from "@rules/config/setting-units.ts";
 import type { ChoiceRule, NumberRule, OpsSetting } from "../api.ts";
 import { settings } from "../content/settings.ts";
 
@@ -54,6 +54,7 @@ export const whole = (text: string, min: number, max: number): boolean => {
 /** Figures read in words: an hour as the clock says it, typed on a 24-hour clock; a day by its name, 0 for Sunday. */
 export const READ_AS: Readonly<Record<string, { readonly say: (figure: number) => string; readonly range: string }>> = {
   [HOUR_OF_DAY]: { say: copy.hour, range: copy.allowedHours },
+  [MINUTE_OF_DAY]: { say: copy.time, range: copy.allowedTimes },
   [DAY_OF_WEEK]: { say: copy.weekday, range: copy.allowedDays },
 };
 
@@ -63,4 +64,16 @@ export function rangeWords(bounds: { min: number; max: number; unit: string }): 
   return reading === undefined
     ? copy.outOfBounds(String(bounds.min), copy.confirm.figure(bounds.max, bounds.unit))
     : copy.allowedWords(reading.say(bounds.min), reading.say(bounds.max), reading.range);
+}
+
+/** A time of the day, minutes past midnight, as a time box holds it: 570 is "09:30". */
+export const clockText = (minute: number): string =>
+  `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+
+/** The minutes past midnight a time box's "HH:MM" says, where it is one within the bounds; null otherwise. */
+export function minuteOf(text: string, min: number, max: number): number | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(text.trim());
+  if (match === null) return null;
+  const minute = Number(match[1]) * 60 + Number(match[2]);
+  return Number(match[2]) < 60 && minute >= min && minute <= max ? minute : null;
 }

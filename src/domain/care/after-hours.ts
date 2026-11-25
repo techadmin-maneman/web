@@ -4,9 +4,9 @@
 
 import { renderMessage } from "../../config/message-templates.ts";
 import type { MessagingSettings } from "../../config/settings.ts";
-import { indiaHour } from "../../lib/india-time.ts";
+import { indiaTime } from "../../lib/india-time.ts";
 import { timeOfDay } from "../../lib/time-range.ts";
-import { careIsOn, lastClosed, type CareHours } from "../../policy/care-hours.ts";
+import { careIsOn, clockOf, lastClosed, type CareHours } from "../../policy/care-hours.ts";
 import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
 import type { MessagingProvider } from "../../providers/messaging/index.ts";
 import { messageWording } from "../words/message-wording.ts";
@@ -16,13 +16,14 @@ export const AUTO_REPLY = "auto";
 
 const TEMPLATE = "care_after_hours_v1";
 
-/** "9 am", "12 noon", "9 pm", as the message says an hour. */
-const hourWords = (hour: number): string => timeOfDay(`${String(hour).padStart(2, "0")}:00`);
+/** "9 am", "9:30 am", "12 noon", as the message says a time. */
+const timeWords = (minute: number): string => timeOfDay(clockOf(minute));
 
 /** When Care are back, as the message says it: "9 am tomorrow", or "9 am" before they open on the same day. */
 function backWords(at: Date, hours: CareHours): string {
-  const sameDay = Number(indiaHour(at).slice(11, 13)) < hours.opens;
-  return sameDay ? hourWords(hours.opens) : `${hourWords(hours.opens)} tomorrow`;
+  const [hour = 0, minute = 0] = indiaTime(at).split(":").map(Number);
+  const sameDay = hour * 60 + minute < hours.opens;
+  return sameDay ? timeWords(hours.opens) : `${timeWords(hours.opens)} tomorrow`;
 }
 
 /**
@@ -49,7 +50,7 @@ export async function answerAfterHours(
   if (thread === null || (thread.last_answered ?? "") >= lastClosed(at, hours).toISOString()) return "none";
   if (isMessageHeldBack(settings, { automatic: true, testRecord: thread.test_record === 1, mobileE164 })) return "none";
   const wording = await messageWording(db, TEMPLATE, false);
-  const text = renderMessage(TEMPLATE, [backWords(at, hours), hourWords(hours.answered_by)], wording?.text) ?? "";
+  const text = renderMessage(TEMPLATE, [backWords(at, hours), timeWords(hours.answered_by)], wording?.text) ?? "";
   const result = await messaging.reply(mobileE164, text);
   const sentAt = at.toISOString();
   await db.batch([

@@ -128,7 +128,7 @@ export function RaiseScreen() {
           <p className={styles.note}>
             {copy.note(
               support.within(hours.first_reply),
-              support.hours(support.hour(hours.opens), support.hour(hours.closes)),
+              support.hours(support.time(hours.opens_minute), support.time(hours.closes_minute)),
             )}
           </p>
         )}
