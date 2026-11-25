@@ -12,4 +12,4 @@ export const CONSENT_BAR_SHOWN = true as boolean;
  * (scripts/build/coming-soon.ts), never indexed; switched on, it is the site, which the publish gate must pass first.
  * The smoke check reads it to know which production should be serving (scripts/lib/smoke.ts).
  */
-export const PRODUCTION_LIVE = false as boolean;
+export const PRODUCTION_LIVE = true as boolean;

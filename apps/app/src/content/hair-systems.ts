@@ -31,9 +31,11 @@ export const hairSystems = {
   lasts: "Lasts",
   months: (months: number) => `${String(months)} months`,
   service: "Service",
-  /** A service visit's price, on Your hair system: "Rs. 2,000 a visit". */
-  perVisit: (amount: string) => `${amount} a visit`,
+  /** A service visit's price, on Your hair system: "Rs. 2,000 a visit, including GST". */
+  perVisit: (amount: string) => `${amount} a visit, including GST`,
   every: (days: number) => (days % 7 === 0 ? `every ${String(days / 7)} weeks` : `every ${String(days)} days`),
-  gst: "Prices include GST.",
+  /** Beneath a service visit's price: "every 4 weeks, including GST". */
+  everyWithGst: (days: number) =>
+    `${days % 7 === 0 ? `every ${String(days / 7)} weeks` : `every ${String(days)} days`}, including GST`,
   failed: "We couldn’t load the hair systems.",
 } as const;

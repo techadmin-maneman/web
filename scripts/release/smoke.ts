@@ -29,6 +29,8 @@ const { values } = parseArgs({
     override: { type: "string", multiple: true },
     surfaces: { type: "boolean", default: false },
     "link-preview": { type: "string" },
+    // mm-api's checks alone: a release's smokes before it ships mm-site (scripts/lib/smoke.ts).
+    "api-only": { type: "boolean", default: false },
   },
 });
 
@@ -36,6 +38,7 @@ const environment = values.environment;
 const apiBase = values["api-base"] ?? values.base;
 const siteBase = values["site-base"] ?? values.base;
 const linkPreview = values["link-preview"];
+const apiOnly = values["api-only"];
 const surfacesOnly = values.surfaces && (environment === "staging" || environment === "production");
 if (
   !isEnvironmentName(environment) ||
@@ -85,6 +88,7 @@ if (surfacesOnly) {
     apiBase: apiBase.replace(/\/$/, ""),
     siteBase: siteBase.replace(/\/$/, ""),
     linkPreview,
+    apiOnly,
   });
   runs.push({ base: apiBase, results });
 }

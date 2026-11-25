@@ -9,8 +9,7 @@
 }
 
 .lede,
-.description,
-.gst {
+.description {
   margin: 0;
   color: var(--ink-500);
 }
@@ -78,8 +77,6 @@
   color: var(--ink-500);
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
-}
-
-.gst {
-  font-size: var(--fs-13);
+  /* Wraps within its fact rather than widening it, so a long note never pushes a fact onto a row of its own. */
+  contain: inline-size;
 }

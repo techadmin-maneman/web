@@ -7,7 +7,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type HeldBooking } from "../api.ts";
-import { home, VISIT_TYPES } from "../content.ts";
+import { home, VISIT_TYPES, withGst } from "../content.ts";
 import styles from "./home.module.css";
 
 const copy = home.heldBooking;
@@ -36,7 +36,7 @@ export function HeldBookingCard() {
             {copy.line(VISIT_TYPES[held.type].toLowerCase(), whenOf(held), untilOf(held))}
           </p>
           <TextLink tone="brass" className={styles.promptLink} href={held.pay_url} newTab>
-            <span>{copy.pay(rupees(held.amount))}</span>
+            <span>{copy.pay(withGst(rupees(held.amount)))}</span>
           </TextLink>
         </div>
       ))}

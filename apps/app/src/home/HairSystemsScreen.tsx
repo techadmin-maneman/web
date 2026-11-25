@@ -61,7 +61,6 @@ export function HairSystemsScreen() {
               {packages.map((offered) => (
                 <Package key={offered.code} offered={offered} me={me} />
               ))}
-              <p className={styles.gst}>{copy.gst}</p>
             </>
           ),
         })}

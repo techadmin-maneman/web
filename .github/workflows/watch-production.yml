@@ -1,0 +1,104 @@
+# Every hour, production as a visitor and its apps find it: mm-api's health, with the cron's last run, the site's pages,
+# each app host serving its app (scripts/release/smoke.ts), every Worker's triggers attached, and no Worker left part-way
+# through a release, its new version on only some of the traffic. It changes nothing. It stands down only while
+# production plainly serves a placeholder, before the launch release, or while a release runs, which splits mm-api on
+# purpose and smokes itself; any other answer from the site, an error included, is checked. A failure opens an issue, or adds
+# to the open one, so whoever watches the repository hears of it; the next pass closes nothing by itself.
+name: watch production
+
+on:
+  schedule:
+    - cron: "47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watch-production
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    name: production answers as it should
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Whether to watch now
+        id: live
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          releasing=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy-production.yml --status in_progress --json databaseId --jq length)
+          page=$(curl -s --max-time 30 https://maneman.in/)
+          if [ "$releasing" != "0" ]; then
+            echo "a production release is running"
+            echo "live=false" >> "$GITHUB_OUTPUT"
+          elif grep -q "Placeholder for the production site" <<< "$page"; then
+            echo "production serves its placeholder"
+            echo "live=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "live=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: ./.github/actions/setup
+        if: steps.live.outputs.live == 'true'
+      - name: The API, the cron and the site
+        if: steps.live.outputs.live == 'true'
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: npm run smoke -- --base https://maneman.in --environment production
+      - name: Each app host and its app
+        if: steps.live.outputs.live == 'true'
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: npm run smoke -- --environment production --surfaces
+      # A release stopped part-way leaves a Worker split between two versions; reading the version serving all of it fails
+      # then, naming the split.
+      - name: No Worker mid-release
+        if: steps.live.outputs.live == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          for worker in mm-api mm-site mm-app mm-ops mm-tech; do
+            node scripts/release/release.ts current --worker "$worker" --env production > /dev/null
+          done
+      # A deploy uploads code but never attaches a new cron, queue consumer or workflow (docs/decisions/0010), and its own
+      # check only warns, so a Worker left without one is caught here, within the hour.
+      - name: Every cron, queue consumer and workflow attached
+        if: steps.live.outputs.live == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/release/check-triggers.ts production --strict
+
+  tell:
+    name: tell whoever watches the repository
+    needs: watch
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/page
+        with:
+          title: "Production failed its hourly watch"
+          url: ${{ secrets.URGENT_PUSH_URL }}
+      - uses: ./.github/actions/failing-issue
+        with:
+          title: "Production is failing its hourly watch"
+          body: "The hourly watch of production failed"
+          token: ${{ github.token }}

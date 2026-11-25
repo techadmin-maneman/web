@@ -4,6 +4,9 @@
 // handles them is live.
 //
 //   npm run apply-triggers -- --env staging
+//   npm run apply-triggers -- --env production --worker mm-app --worker mm-ops --worker mm-tech
+//       Those Workers alone: the apps' routes before the launch release, while mm-api's cron, consumers and
+//       Workflows wait for the code that handles them (docs/go-live.md, section 4).
 //
 // An app whose surface is not switched on there is passed over, deployed or
 // not: its bootstrap or its surface's release attaches its route (docs/runbook.md,
@@ -18,14 +21,24 @@ import { parseArgs } from "node:util";
 import { currentVersion, wranglerFor } from "../lib/release.ts";
 import { WORKERS } from "../lib/workers.ts";
 
-const { values } = parseArgs({ options: { env: { type: "string" } } });
+const { values } = parseArgs({
+  options: { env: { type: "string" }, worker: { type: "string", multiple: true } },
+});
 const environment = values.env;
 if (environment !== "staging" && environment !== "production") {
   console.error("usage: npm run apply-triggers -- --env <staging|production>");
   process.exit(2);
 }
 
-for (const worker of WORKERS) {
+const named = values.worker ?? [];
+const unknown = named.filter((name) => !WORKERS.some((worker) => worker.name === name));
+if (unknown.length > 0) {
+  console.error(`no Worker named ${unknown.join(", ")}`);
+  process.exit(2);
+}
+const chosen = named.length === 0 ? WORKERS : WORKERS.filter((worker) => named.includes(worker.name));
+
+for (const worker of chosen) {
   const wrangler = wranglerFor(worker, environment);
   if (currentVersion({ worker, environment, wrangler }) === "") {
     console.log(`${worker.name}-${environment}: not deployed yet, so nothing to attach`);
@@ -37,7 +50,9 @@ for (const worker of WORKERS) {
   console.log(wrangler(["triggers", "deploy"]));
 }
 
-if ((process.env.CLOUDFLARE_API_TOKEN ?? "") === "") {
+if (named.length > 0) {
+  console.log("Only the Workers named were attached, so the strict check waits for the rest.");
+} else if ((process.env.CLOUDFLARE_API_TOKEN ?? "") === "") {
   console.log(
     `To confirm what is live: node --env-file=<file> scripts/release/check-triggers.ts ${environment} --strict`,
   );

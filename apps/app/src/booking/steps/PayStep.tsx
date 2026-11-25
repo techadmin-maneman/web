@@ -15,7 +15,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Address, Hold, MoveTerms } from "../../api.ts";
 import { ActionWithMissing } from "../../frame/ActionWithMissing.tsx";
-import { arrivalHours, booking, change, LEGAL_URLS, missing, ONE_VISIT } from "../../content.ts";
+import { arrivalHours, booking, change, LEGAL_URLS, missing, ONE_VISIT, withGst } from "../../content.ts";
 import { priceFigures } from "../../lib/money.ts";
 import { noticeUrl } from "../../lib/notices.ts";
 import { CodeBox } from "../CodeBox.tsx";
@@ -54,7 +54,7 @@ function carriedOver(moving: MoveTerms): string | null {
 /** What a change inside the notice takes, where it takes anything. */
 type Charged = Exclude<AtStake, { readonly kind: "nothing" }>;
 
-/** "This visit is less than 24 hours away: moving or cancelling it costs Rs. 1,180 (Rs. 1,000 + Rs. 180 GST)." */
+/** "This visit is less than 24 hours away: moving or cancelling it costs Rs. 1,180 including GST (Rs. 1,000 + Rs. 180 GST)." */
 function InsideNotice({ stake, hours }: { stake: Charged; hours: number }) {
   const copy = booking.pay.insideNotice;
   if (stake.kind === "credit") return copy.credit(hours);
@@ -62,7 +62,7 @@ function InsideNotice({ stake, hours }: { stake: Charged; hours: number }) {
   const { amount, split } = priceFigures(stake.fee);
   return (
     <>
-      {copy.lateFee(hours, amount)}
+      {copy.lateFee(hours, withGst(amount))}
       {split !== null && <span className={styles.inclusive}>{booking.lateFee.split(split)}</span>}.
     </>
   );
@@ -230,7 +230,7 @@ function PriceFacts({ hold, moving }: { hold: Hold; moving: MoveTerms | undefine
       {kept !== null && free ? (
         <Fact name={copy.payment}>{kept}</Fact>
       ) : (
-        <Fact name={split === null || free ? copy.total : copy.totalWithGst}>
+        <Fact name={free ? copy.total : copy.totalWithGst}>
           {covered && <s className={styles.was}>{rupees(hold.price.amount)}</s>}
           {listPrice !== null && <s className={styles.was}>{rupees(listPrice.amount)}</s>}
           <strong className={styles.amount}>{amountLine(hold, covered, free)}</strong>

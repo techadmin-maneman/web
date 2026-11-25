@@ -17,7 +17,7 @@ import { Toast } from "@maneman/ui/Toast";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { BookableType, Me } from "../api.ts";
-import { booking, VISIT_TYPES } from "../content.ts";
+import { booking, VISIT_TYPES, withGst } from "../content.ts";
 import { useSession } from "../session.ts";
 import type { Offered } from "./BookingSheet.tsx";
 import { BookingSheet } from "./lazy-sheet.tsx";
@@ -69,7 +69,7 @@ function WithOps(props: {
           {props.label}
         </Button>
       )}
-      {!props.quiet && service !== undefined && <p>{booking.withOps(rupees(service.price.amount))}</p>}
+      {!props.quiet && service !== undefined && <p>{booking.withOps(withGst(rupees(service.price.amount)))}</p>}
       {open && (
         <RequestSheet
           message={props.message}

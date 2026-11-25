@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { FULL_SUITE_JOB, REUSABLE_CHECKS, type ReusableCheck } from "../../../scripts/lib/already-checked.ts";
 import { WORKERS } from "../../../scripts/lib/workers.ts";
-import { allSteps, jobOf, needsOf, placeOf, stepOf, workflow, WORKFLOW_FILES, type Job } from "./workflows.ts";
+import { allSteps, jobOf, needsOf, placeOf, runStep, stepOf, workflow, WORKFLOW_FILES, type Job } from "./workflows.ts";
 
 const DEPLOYS = [
   ["deploy-staging.yml", "deploy", "staging"],
@@ -68,6 +68,36 @@ describe("the production release", () => {
   it("restores whatever a failed deploy left serving, once traffic has moved", () => {
     expect(rollBack.if).toBe("failure() && steps.canary.outcome != 'skipped'");
     expect(release.steps?.find((step) => step.id === "canary")?.name).toMatch(/^Send the new version/);
+  });
+
+  // Before mm-site ships, the site is the one serving before the release: at launch the bare placeholder of September,
+  // with none of the site's headers, which would fail the release's own smokes and roll it back.
+  it("smokes mm-api alone until mm-site ships, and the whole site once it has", () => {
+    const shipsSite = placeOf(release, "ship --worker mm-site");
+    const smokes = (release.steps ?? []).flatMap((step, place) =>
+      step.run?.includes("npm run smoke -- --base") === true ? [{ place, run: step.run }] : [],
+    );
+    const beforeSite = smokes.filter((smoke) => smoke.place < shipsSite);
+    expect(beforeSite).toHaveLength(3);
+    for (const smoke of beforeSite) expect(smoke.run).toContain("${{ steps.before.outputs.api_only }}");
+    expect(stepOf(release, "Final smoke").run).not.toContain("api_only");
+    expect(rollBack.env?.API_ONLY).toBe("${{ steps.before.outputs.api_only }}");
+    expect(rollBack.run).toContain("$API_ONLY");
+  });
+
+  it("checks mm-api alone only where the commit's own smoke knows how", () => {
+    const record = stepOf(release, "Record the versions serving now");
+    const node = 'echo "v-1"';
+    expect(runStep(record, { node, grep: "exit 0" }).outputs.api_only).toBe("--api-only");
+    expect(runStep(record, { node, grep: "exit 1" }).outputs.api_only).toBe("");
+  });
+
+  it("lets the policy check past Access, which keeps the console's host and, until the doors open, the apps'", () => {
+    const check = stepOf(release, "No production page refuses anything under its content security policy");
+    expect(check.env).toEqual({
+      CF_ACCESS_CLIENT_ID: "${{ secrets.CF_ACCESS_CLIENT_ID }}",
+      CF_ACCESS_CLIENT_SECRET: "${{ secrets.CF_ACCESS_CLIENT_SECRET }}",
+    });
   });
 
   // The check ran before the apps' Workers shipped, so a release's own pages there went unchecked.
@@ -180,5 +210,37 @@ describe("deploy-staging.yml", () => {
     expect(check).toBeDefined();
     expect(check?.["continue-on-error"]).toBeUndefined();
     expect(placeOf(deploy, "smoke:csp")).toBeGreaterThan(placeOf(deploy, "--surfaces --version-tag"));
+  });
+});
+
+describe("watch-production.yml", () => {
+  const flow = workflow("watch-production.yml");
+  const watch = jobOf(flow, "watch");
+  const gate = stepOf(watch, "Whether to watch now");
+  const LIVE = '<!doctype html><meta name="mm-worker" content="mm-site" /><title>Mane Man</title>';
+  const decide = (page: string, releasing = "0") =>
+    runStep(gate, { gh: `echo ${releasing}`, curl: `printf '%s' '${page}'` }).outputs.live;
+
+  it("checks the live site, and a site answering anything else, an error included", () => {
+    expect(decide(LIVE)).toBe("true");
+    expect(decide("error code: 1101")).toBe("true");
+    expect(decide("")).toBe("true");
+  });
+
+  it("stands down while production serves the placeholder of September, or while a release splits mm-api", () => {
+    expect(decide("<p>Mane Man. Placeholder for the production site.</p>")).toBe("false");
+    expect(decide(LIVE, "1")).toBe("false");
+  });
+
+  // A live site wrongly marked noindex is a fault to be told of, never a reason to check nothing.
+  it("checks a live site marked noindex", () => {
+    expect(
+      decide('<meta name="robots" content="noindex, nofollow" /><meta name="mm-worker" content="mm-site" />'),
+    ).toBe("true");
+  });
+
+  it("runs every check only when it watches, and tells someone when one fails", () => {
+    for (const step of (watch.steps ?? []).slice(2)) expect(step.if).toBe("steps.live.outputs.live == 'true'");
+    expect(jobOf(flow, "tell").if).toBe("${{ failure() }}");
   });
 });

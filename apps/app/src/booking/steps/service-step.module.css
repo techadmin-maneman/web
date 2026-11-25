@@ -1,6 +1,6 @@
 /* What ./ServiceStep.tsx alone draws; what it shares is in ../booking.module.css. */
 
-/* A visit's price, where a window's note sits: the ex-GST figure, and the inclusive one muted beneath it. */
+/* A visit's price, where a window's note sits: the figure, with "Including GST" and the GST split muted beneath it. */
 .serviceMoney {
   flex-shrink: 0;
   text-align: right;

@@ -16,13 +16,16 @@ describe("the pages it opens", () => {
     ]);
   });
 
-  it("opens only the surfaces production has switched on, the site's coming-soon page alone until it goes live", () => {
-    expect(pagesToCheck("production", false)).toEqual(["https://maneman.in/"]);
-    expect(pagesToCheck("production", true)).toEqual([
+  it("opens the same in production, the site's coming-soon page alone where it is not live", () => {
+    expect(pagesToCheck("production")).toEqual([
       "https://maneman.in/",
       "https://maneman.in/book",
       "https://maneman.in/try",
+      "https://app.maneman.in/",
+      "https://ops.maneman.in/",
+      "https://tech.maneman.in/",
     ]);
+    expect(pagesToCheck("production", false).slice(0, 2)).toEqual(["https://maneman.in/", "https://app.maneman.in/"]);
   });
 });
 

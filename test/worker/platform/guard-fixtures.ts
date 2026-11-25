@@ -83,6 +83,7 @@ export const ZOHO_BOOKS = {
   BOOKS_ITEM_PUSH: "false",
 };
 
+/** Every surface is on in production, the client's among them, so Books is connected there. */
 export const production = {
   ENVIRONMENT: "production",
   ...REAL,
@@ -91,10 +92,10 @@ export const production = {
   ...ZOHO,
   ...IMAGE,
   ...EVOLUTION,
+  ...ZOHO_BOOKS,
 };
 
-/** Staging has the client surface on, so Books is connected there. */
-export const stagingBase = { ...production, ENVIRONMENT: "staging", ...ZOHO_BOOKS };
+export const stagingBase = { ...production, ENVIRONMENT: "staging" };
 
 export function problemsOf(env: Record<string, unknown>): readonly string[] {
   try {

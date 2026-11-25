@@ -3,12 +3,12 @@
 
 import { rupees } from "@maneman/web-kit/money";
 import type { OneVisitPrice } from "../api.ts";
-import { home } from "../content.ts";
+import { home, withGst } from "../content.ts";
 
 function priceLine(price: OneVisitPrice): string {
   const copy = home.oneVisit;
   if (price.amount === null) return copy.unpriced;
-  const amount = rupees(price.amount);
+  const amount = withGst(rupees(price.amount));
   return price.from ? copy.from(amount) : copy.price(amount);
 }
 

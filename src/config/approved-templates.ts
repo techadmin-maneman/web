@@ -61,7 +61,7 @@ const DIFFERS: Partial<Record<TemplateName, { readonly text?: string; readonly b
  * Submitted and not yet approved: MSG91 is not asked to send them, and their messages are skipped rather than failed
  * (docs/decisions/0300-payment-links-on-whatsapp.md). A template leaves the list once WhatsApp approves it.
  */
-export const AWAITING_APPROVAL: ReadonlySet<TemplateName> = new Set(["payment_link_v1"]);
+export const AWAITING_APPROVAL: ReadonlySet<TemplateName> = new Set<TemplateName>([]);
 
 /**
  * Never submitted: the stop line is a button, and the answer to STOP and the after-hours answer go as replies while

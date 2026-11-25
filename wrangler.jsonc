@@ -261,15 +261,15 @@
         "ENVIRONMENT": "staging",
         "TURNSTILE_ACCEPT_TEST_TOKEN": "true",
         "IMAGE_PROVIDER": "youcam",
-        "CRM_PROVIDER": "zoho",
+        // Staging writes nothing into the real Zoho org from the launch on (docs/go-live.md, item 19): a pull request switches
+        // the one a test needs back to "zoho", and another back to "stub" once it is tested.
+        "CRM_PROVIDER": "stub",
         "MESSAGING_PROVIDER": "msg91",
         "ACCESS_PROVIDER": "cloudflare",
         // The ops-staging Access application's audience tag.
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
         "SMS_PROVIDER": "none",
-        // Books is in the real org (ADR 0025, item 26). Secrets ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN: the
-        // org's one Self Client, with a refresh token of Books' own.
-        "BOOKS_PROVIDER": "zoho",
+        "BOOKS_PROVIDER": "stub",
         "ZOHO_BOOKS_ACCOUNTS_HOST": "accounts.zoho.in",
         "ZOHO_BOOKS_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ORG_ID": "60088931635",
@@ -282,7 +282,7 @@
         // GST in Books (docs/decisions/0274-gst-on.md): the GSTIN and the state it is registered in; the SAC code once
         // the CA gives it.
         "BOOKS_GSTIN": "07AAVCM6347C1Z5",
-        "BOOKS_ITEM_PUSH": "true",
+        "BOOKS_ITEM_PUSH": "false",
         "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "4242595000000000567",
         "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
         "BOOKS_GST_STATE": "DL",
@@ -331,7 +331,13 @@
       "placement": { "mode": "targeted", "region": "aws:ap-southeast-1" },
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
       "triggers": { "crons": ["* * * * *"] },
-      "routes": [{ "pattern": "maneman.in/api/*", "zone_name": "maneman.in" }],
+      // One per switched-on surface (docs/decisions/0026-hosts-and-surfaces.md).
+      "routes": [
+        { "pattern": "maneman.in/api/*", "zone_name": "maneman.in" },
+        { "pattern": "app.maneman.in/api/*", "zone_name": "maneman.in" },
+        { "pattern": "ops.maneman.in/api/*", "zone_name": "maneman.in" },
+        { "pattern": "tech.maneman.in/api/*", "zone_name": "maneman.in" }
+      ],
       "d1_databases": [
         {
           "binding": "DB",
@@ -420,16 +426,17 @@
         "TURNSTILE_ACCEPT_TEST_TOKEN": "false",
         "IMAGE_PROVIDER": "youcam",
         "CRM_PROVIDER": "zoho",
-        "MESSAGING_PROVIDER": "evolution",
+        "MESSAGING_PROVIDER": "msg91",
         "ACCESS_PROVIDER": "cloudflare",
-        // The ops Access application's audience tag; unused until ops is switched on in production.
+        // The ops Access application's audience tag.
         "ACCESS_OPS_AUD": "aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773",
         "SMS_PROVIDER": "none",
-        // Zoho Books stays off until Phase 2's release (docs/open-points.md).
-        "BOOKS_PROVIDER": "none",
-        "ZOHO_BOOKS_ACCOUNTS_HOST": "",
-        "ZOHO_BOOKS_API_HOST": "",
-        "ZOHO_BOOKS_ORG_ID": "",
+        // Books is in the real org (ADR 0025, item 26). Secrets ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN: the
+        // org's one Self Client, with a refresh token of Books' own.
+        "BOOKS_PROVIDER": "zoho",
+        "ZOHO_BOOKS_ACCOUNTS_HOST": "accounts.zoho.in",
+        "ZOHO_BOOKS_API_HOST": "www.zohoapis.in",
+        "ZOHO_BOOKS_ORG_ID": "60088931635",
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000001556003",
         "BOOKS_BANK_ACCOUNT_ID": "4242595000001689024",
         "BOOKS_GATEWAY_FEES_ACCOUNT_ID": "4242595000000000507",
@@ -439,14 +446,15 @@
         // GST in Books (docs/decisions/0274-gst-on.md): the GSTIN and the state it is registered in; the SAC code once
         // the CA gives it.
         "BOOKS_GSTIN": "07AAVCM6347C1Z5",
-        "BOOKS_ITEM_PUSH": "false",
+        "BOOKS_ITEM_PUSH": "true",
         "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "4242595000000000567",
         "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
         "BOOKS_GST_STATE": "DL",
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         "SERVICE_TOKEN_ACTS_AS": "",
         "BOOKS_SAC": "",
-        // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
+        // Razorpay is switched on once it gives live keys, which it does only once the site is live: until then clients
+        // book only the free consultation themselves.
         "PAYMENTS_PROVIDER": "none",
         // Google, for the address search and, below, routes: the GOOGLE_MAPS_API_KEY secret, the same key as staging.
         "GEOCODE_PROVIDER": "google",
@@ -457,8 +465,8 @@
         "META_CAPI_PROVIDER": "meta",
         "GOOGLE_ADS_PROVIDER": "google",
         "CONVERSIONS_TEST_MODE": "false",
-        // The launch day, set at launch with the secrets (docs/go-live.md); no platform sends without it.
-        "CONVERSIONS_FROM": "",
+        // The launch day: nothing that happened before it is sent.
+        "CONVERSIONS_FROM": "2026-11-26",
         "ROUTES_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "false",
         "CLIENT_SIGN_OFF": "true",
@@ -476,7 +484,7 @@
         // Where YouCam fetches each look's reference photograph: public, so production's host for staging too, whose
         // own sits behind Access. The path ends in the references' version (src/config/presets.ts).
         "TRYON_REFS_URL": "https://maneman.in/refs/v1",
-        "MESSAGING_ENABLED": "false"
+        "MESSAGING_ENABLED": "true"
       }
     }
   }

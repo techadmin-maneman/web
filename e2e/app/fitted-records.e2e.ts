@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { fullDate, fullMonth } from "../../packages/web-kit/dates.ts";
+import { rupees } from "../../packages/web-kit/money.ts";
 import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -187,6 +188,7 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
   await expect(page.getByText(PRICE.service, { exact: true })).toBeVisible();
   // No rate was recorded for this payment, so nothing is said of GST at all.
   await expect(page.getByText(/GST at/)).toHaveCount(0);
+  await expect(page.getByText(appCopy.includingGst, { exact: true })).toHaveCount(0);
   await expect(page.getByText(client.reference)).toBeVisible();
   for (const name of ["Tax invoice", "Receipt"]) {
     const document = page.getByRole("button", { name: `${name} PDF, opens in a new tab`, exact: true });
@@ -238,6 +240,22 @@ test("a payment made with a discount code names the code, and what it took off",
   await page.goto(`/payments/${client.servicePayment}`);
   await expect(page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.service })).toBeVisible();
   await expect(page.getByText("AUDTEST: Rs. 1,000 off")).toBeVisible();
+});
+
+// A payment carrying GST says GST is in it, with the split beneath; one carrying none says nothing of GST (above).
+test("a payment that carried GST says it is included, and how it splits", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
+  const path = `/api/payments/${client.servicePayment}`;
+  const entry = await page.evaluate(async (url) => (await fetch(url)).json() as Promise<object>, path);
+  const body = { ...entry, amount: 236_000, amount_ex_gst: 200_000 };
+  assertInContract("client", "GET", path, 200, body);
+  await page.route(`**${path}`, (route) => route.fulfill({ json: body }));
+  await page.goto(`/payments/${client.servicePayment}`);
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.service })).toBeVisible();
+  await expect(page.getByText(appCopy.includingGst, { exact: true })).toBeVisible();
+  await expect(page.getByText(appCopy.gstSplit(rupees(200_000), rupees(36_000)), { exact: true })).toBeVisible();
 });
 
 test("each read surface meets WCAG 2.2 AA", async ({ page }) => {

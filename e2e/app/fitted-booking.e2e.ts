@@ -5,6 +5,7 @@ import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 import { tab } from "./fitted-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { PRICE } from "../prices.ts";
 
 // A visit paid for that FSM has not taken yet, as while FSM refuses it and it waits for ops
 // (docs/decisions/0095-a-booking-fsm-refuses-is-held.md): Home neither says it is booked nor that the money is gone,
@@ -67,7 +68,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   await page.reload();
   const home = page.getByRole("region", { name: appCopy.home.oneVisit.label });
   await expect(home).toContainText(`${weekdayName("2027-09-25")} ${dayMonth("2027-09-25")}`);
-  await expect(home).toContainText("Rs. 30,000, only if you go ahead");
+  await expect(home).toContainText(appCopy.home.oneVisit.price(appCopy.withGst(PRICE.firstFit)));
   await expect(home).not.toContainText(appCopy.home.beingBooked.free);
   // Nothing paid and no consent to visit messages, so no WhatsApp is promised.
   await expect(home).not.toContainText("We will message you on WhatsApp");
@@ -147,7 +148,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   const card = page.getByRole("region", { name: appCopy.home.oneVisit.label });
   await expect(card).toContainText(appCopy.ONE_VISIT);
   await expect(card).toContainText(/about 3 hours/);
-  await expect(card).toContainText("Rs. 27,000, only if you go ahead");
+  await expect(card).toContainText("Rs. 27,000 including GST, only if you go ahead");
   await expect(card).toContainText("Code TENPC applied");
   await expect(card).toContainText(appCopy.home.oneVisit.paidBy);
   await expect(page.getByRole("region", { name: appCopy.home.expect.labelOneVisit })).toContainText(
@@ -181,7 +182,9 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
   await page.reload();
 
   const home = page.getByRole("region", { name: appCopy.home.owed.label });
-  await expect(home).toContainText("Mane Man Natural hair system · Rs. 45,000");
+  await expect(home).toContainText(
+    appCopy.home.owed.line("Mane Man Natural hair system", appCopy.withGst("Rs. 45,000")),
+  );
   await expect(home.getByRole("link", { name: /^Pay now ?, opens Razorpay in a new tab$/ })).toHaveAttribute(
     "href",
     owed.url,
@@ -193,5 +196,6 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
   const toPay = page.getByRole("region", { name: appCopy.home.owed.label });
   await expect(toPay.getByRole("link")).toHaveAttribute("href", owed.url);
   await expect(toPay).toContainText("Rs. 45,000");
+  await expect(toPay.getByText(appCopy.includingGst, { exact: true })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
