@@ -53,7 +53,7 @@ function careTimes(): { opens: number; closes: number } {
 function servedCities(): readonly string[] {
   try {
     const read: unknown = JSON.parse(readFileSync(new URL(".served-cities.json", import.meta.url), "utf8"));
-    if (Array.isArray(read) && read.every((city) => typeof city === "string")) return read as string[];
+    if (Array.isArray(read) && read.every((city) => typeof city === "string")) return read;
   } catch {
     // None read: a build for tests.
   }
