@@ -16,7 +16,7 @@
 // The built films are given a byte range at a time, which the assets cannot do: iOS Safari plays a video only from a
 // server that can.
 //
-// The home page and /areas name the cities ops serve (GET /api/served-cities), kept a minute as the reward is, so a
+// The home page, the Gurgaon page and /areas name the cities ops serve (GET /api/served-cities), kept a minute as the reward is, so a
 // launch reaches the site without a rebuild; each sentence that names them is built naming none. A city's page,
 // /areas/<city>, lists the areas served there, which it is built without.
 //
@@ -52,7 +52,7 @@ const NO_CODE = /^\/r\/?$/;
 const FILM = /^\/_astro\/[^/]+\.mp4$/;
 
 /** The pages that name the cities we come to. */
-const CITY_PAGES = new Set(["/", "/areas"]);
+const CITY_PAGES = new Set(["/", "/gurgaon", "/areas"]);
 
 /** A city's own page. */
 const CITY_PAGE = /^\/areas\/[a-z0-9-]+$/;
