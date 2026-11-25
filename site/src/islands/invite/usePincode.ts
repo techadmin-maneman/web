@@ -34,9 +34,10 @@ export function usePincode() {
     if (takeEarlyCheck()) setCheckedEarly(true);
   }, []);
 
-  // A Check tapped before then is answered once the field holds those digits, as a tap now would be.
+  // A Check tapped before then is answered once the field holds those digits, as a tap now would be. The submit is sent
+  // as an event: Safari before 16 has no requestSubmit.
   useLayoutEffect(() => {
-    if (checkedEarly) field.current?.form?.requestSubmit();
+    if (checkedEarly) field.current?.form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
   }, [checkedEarly]);
 
   // The answer is read out by moving focus to it, and the page brings it, with the form beneath, into view.

@@ -38,6 +38,10 @@ test("keeps a pincode typed before the page has woken, and answers a Check tappe
   page,
 }) => {
   const checked = await mockLanding(page);
+  // As Safari before 16, which has no requestSubmit.
+  await page.addInitScript(() => {
+    Reflect.deleteProperty(HTMLFormElement.prototype, "requestSubmit");
+  });
 
   // The island's script is held until the visitor has typed and tapped.
   let wake: () => void = () => undefined;
@@ -102,4 +106,6 @@ test("checks a pincode once for a Check tapped once the page has woken", async (
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByRole("heading", { name: referralCopy.referral.consultation.title })).toBeVisible();
   expect(checked()).toBe(1);
+  // The page notes only a tap that nothing answered.
+  await expect(page.locator("#invite")).not.toHaveAttribute("data-checked");
 });

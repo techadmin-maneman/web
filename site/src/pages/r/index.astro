@@ -34,7 +34,7 @@ import { TURNSTILE_SITE_KEYS } from "../../lib/turnstile.ts";
     document.getElementById("invite").addEventListener("submit", (event) => {
       if (event.defaultPrevented) return;
       event.currentTarget.dataset.checked = "";
-      if (event.submitter !== null) event.submitter.textContent = checking;
+      if (event.submitter) event.submitter.textContent = checking;
     });
   </script>
 </Site>
