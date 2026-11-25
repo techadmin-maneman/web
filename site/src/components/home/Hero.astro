@@ -1,22 +1,29 @@
 ---
-// The hero: muted looping footage behind the headline. The poster is the
-// largest thing painted first, so it is an image of its own, fetched first, and
-// a phone's is the upright centre its own cut of the film opens on; the video,
-// over it, fetches nothing until it plays, once the page has loaded.
+// The hero: muted looping footage behind the headline, drawn mirrored so its
+// subject faces the words. The poster is the largest thing painted first, so it
+// is an image of its own, fetched first: the frame the film opens on, and on a
+// phone the frame its own cut opens on; the video, over it, fetches nothing until
+// it plays, once the page has loaded.
 // Over it the opening line shows one phrase at a time, round and round,
 // until Pause stops it with the film; a screen reader hears the whole line
 // once, and reduced motion shows the last phrase alone. Restyled in Plex on the page's column, the area at the top
-// left and Pause at the top right, Book gold and first (ADR 0264).
+// left and Pause at the top right, Book gold and first (ADR 0264). A page may give its own footage: the Gurgaon
+// page's is its clients' (ADR 0321).
 import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
-import { hero, heroFootage } from "../../content/site.ts";
+import { hero, heroFootage, type HeroFootage } from "../../content/site.ts";
 import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
 import { PHONE_SCREEN } from "../../lib/hero-film.ts";
 import { heroPosters, PHONE_POSTER } from "../../lib/hero.ts";
 import { designMedia } from "../../lib/images.ts";
 
-const posters = await heroPosters();
-const showFootage = isShown(heroFootage);
+interface Props {
+  footage?: HeroFootage;
+}
+
+const { footage = heroFootage } = Astro.props;
+const posters = await heroPosters(footage);
+const showFootage = isShown(footage);
 ---
 
 <section class="hero on-ink" data-section="hero">
@@ -28,8 +35,8 @@ const showFootage = isShown(heroFootage);
       </picture>
       <video
         data-hero-video
-        data-film={designMedia(heroFootage.video)}
-        data-phone-film={designMedia(heroFootage.phoneVideo)}
+        data-film={designMedia(footage.video)}
+        data-phone-film={designMedia(footage.phoneVideo)}
         muted
         loop
         playsinline
@@ -41,7 +48,7 @@ const showFootage = isShown(heroFootage);
   <div class="scrim"></div>
   <div class="scrim scrim--up"></div>
   <div class="scrim scrim--side"></div>
-  {isTaggedPlaceholder(heroFootage) && showFootage && <div class={capsLook("label tag")}>{heroFootage.tag}</div>}
+  {isTaggedPlaceholder(footage) && showFootage && <div class={capsLook("label tag")}>{footage.tag}</div>}
   <p class="area">{hero.area}</p>
   <button
     type="button"

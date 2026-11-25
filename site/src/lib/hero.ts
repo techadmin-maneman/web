@@ -1,8 +1,9 @@
-// The hero's posters: the home page's largest first paint, which shows until the footage plays. A phone gets the
-// poster's upright centre, the frame its own cut of the film opens on (heroFootage.phoneVideo in content/site.ts).
+// The hero's posters: the page's largest first paint, which shows until the footage plays. A phone gets the frame its
+// own cut opens on: given apart where the footage has one, and otherwise the poster's upright centre, which the home
+// page's phone cut is cut from (heroFootage.phoneVideo in content/site.ts).
 
 import { getImage } from "astro:assets";
-import { heroFootage } from "../content/site.ts";
+import { heroFootage, type HeroFootage } from "../content/site.ts";
 import { isShown } from "./build.ts";
 import { designImage } from "./images.ts";
 
@@ -15,12 +16,13 @@ export interface HeroPosters {
 }
 
 /** Each poster's URL, or undefined when the footage is not shown. */
-export async function heroPosters(): Promise<HeroPosters | undefined> {
-  if (!isShown(heroFootage)) return undefined;
-  const src = designImage(heroFootage.poster);
+export async function heroPosters(footage: HeroFootage = heroFootage): Promise<HeroPosters | undefined> {
+  if (!isShown(footage)) return undefined;
+  const src = designImage(footage.poster);
+  const phoneSrc = designImage(footage.phonePoster ?? footage.poster);
   const [wide, phone] = await Promise.all([
     getImage({ src, format: "webp", width: 1440 }),
-    getImage({ src, format: "webp", ...PHONE_POSTER, fit: "cover", position: "center" }),
+    getImage({ src: phoneSrc, format: "webp", ...PHONE_POSTER, fit: "cover", position: "center" }),
   ]);
   return { wide: wide.src, phone: phone.src };
 }

@@ -142,10 +142,12 @@ export const booking = {
     /** The promise of any time picked, whoever comes. */
     arrival: (minutes: number) =>
       `The technician arrives within ${String(minutes)} minutes of the time you pick. We assign the technician.`,
-    /** Above Continue, once a time is picked: "Tue 18 Nov, arrives 9:30–10 am". */
+    /** The visit's time as the payment step states it: "Tue 18 Nov, arrives 9:30–10 am". */
     summary: (day: string, hours: string) => `${day}, arrives ${hours}`,
+    /** Above Continue, once a time is picked, as a sentence: "Tue 18 Nov, arrives 9:30–10 am." */
+    chosen: (day: string, hours: string) => `${day}, arrives ${hours}.`,
     // A time already inside the notice.
-    within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
+    within: (hours: number) => `Within ${String(hours)} hours: changes are charged.`,
     continue: "Continue",
     // Taken by another booking, or no longer fitting the technician's day once the drives are checked.
     gone: "That time isn’t free any more. Pick another.",

@@ -74,7 +74,9 @@ function Fitted({ state }: { state: Refer }) {
               key={`${friend.month}-${String(index)}`}
               title={friend.first_name ?? refer.fitted.unnamed}
               meta={refer.fitted.when(listMonth(friend.month, yearInIndia(apiNow())))}
-              end={<span className={styles.plus}>{refer.plusVisits(friend.visits)}</span>}
+              end={
+                friend.visits > 0 ? <span className={styles.plus}>{refer.plusVisits(friend.visits)}</span> : undefined
+              }
             />
           ))}
         </ListRows>

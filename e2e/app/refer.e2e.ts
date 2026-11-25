@@ -433,6 +433,10 @@ test("says what ops set each side gets, and beside each friend what the client e
   await expect(
     page.getByText("When a friend you refer is fitted, you get 2 free service visits, and your friend gets 4."),
   ).toBeVisible();
+  // Beside each friend fitted, what it earned; nothing beside one that earned none.
+  const fitted = page.getByRole("region", { name: appCopy.refer.fittedTitle }).getByRole("listitem");
+  await expect(fitted.filter({ hasText: "Karan" })).toContainText(appCopy.refer.plusVisits(2));
+  await expect(fitted.filter({ hasText: "Vikram" })).not.toContainText(appCopy.refer.plusVisits(0));
 
   await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
