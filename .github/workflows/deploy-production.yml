@@ -320,7 +320,7 @@ jobs:
           echo "::error::Release $SHA failed. Restoring the versions that were serving before it."
           node scripts/release/release.ts restore --env production --message "rollback of $SHA" \
             --to "mm-api=$API" --to "mm-site=$SITE" --to "mm-app=$APP" --to "mm-ops=$OPS" --to "mm-tech=$TECH"
-          npm run smoke -- --base https://maneman.in --environment production --version-id "$API" $API_ONLY
+          npm run smoke -- --base https://maneman.in --environment production --version-id "$API" ${API_ONLY:+"$API_ONLY"}
 
       # Read-only, and a warning at most: CI cannot apply triggers (docs/decisions/0010-applying-triggers.md).
       - name: The cron schedules and queue consumers live match every Worker's config
