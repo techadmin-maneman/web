@@ -37,4 +37,6 @@ private/
 
 # The words the Words page published, which a site build fetches (site/src/lib/published-words.ts).
 site/.words.json
+site/.care-times.json
+site/.served-cities.json
 .actionlint/

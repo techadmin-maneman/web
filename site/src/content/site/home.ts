@@ -260,6 +260,12 @@ export const guarantee = {
   text: GUARANTEE,
 };
 
+/** A question and its answer, as a page shows it and search engines read it. */
+export interface FaqItem {
+  readonly q: string;
+  readonly a: string;
+}
+
 export const faq = {
   title: "Questions",
   intro: { before: "If yours isn’t here, ", link: "ask on WhatsApp", after: "." },

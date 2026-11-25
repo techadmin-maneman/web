@@ -56,6 +56,14 @@ test("the home page describes the business and its FAQ as structured data", asyn
     .evaluateAll((scripts) => scripts.map((script) => JSON.parse(script.textContent) as Record<string, unknown>));
   const business = data.find((item) => item["@type"] === "LocalBusiness");
   expect(business).toMatchObject({ name: "Mane Man", url: "https://maneman.in/", telephone: "+919034572990" });
+  // Customer Care's hours, every day, as the console sets them (the local build has the policy's own), and the way to
+  // them on WhatsApp.
+  const everyDay = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const hours = { "@type": "OpeningHoursSpecification", dayOfWeek: everyDay, opens: "09:30", closes: "19:00" };
+  expect(business).toMatchObject({
+    openingHoursSpecification: [hours],
+    contactPoint: { contactType: "customer service", url: "https://wa.me/919034572990", hoursAvailable: hours },
+  });
   // The site gives no prices (ADR 0103).
   expect(business).not.toHaveProperty("priceRange");
   const faq = data.find((item) => item["@type"] === "FAQPage") as { mainEntity: { name: string }[] } | undefined;

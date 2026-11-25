@@ -1,9 +1,13 @@
-// Schema.org data for search engines, from content: the company and the site, the business and its FAQ on the home
-// page, each guide as an article, and the way back to the home page from each page a level down. None gives a price:
-// the site gives none (docs/decisions/0103-the-home-pages-first-copy-round.md).
+// Schema.org data for search engines, from content: the company and the site, the business, its hours and its
+// WhatsApp, and its FAQ on the home page, each guide as an article, and the way back to the home page from each page a
+// level down. None gives a price: the site gives none (docs/decisions/0103-the-home-pages-first-copy-round.md). The
+// hours are Customer Care's, every day (docs/decisions/0325-search-pages-and-opening-hours.md).
 
 import type { Guide } from "../content/guides.ts";
-import { business, faq, whatsapp } from "../content/site.ts";
+import { business, faq, whatsapp, type FaqItem } from "../content/site.ts";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import { CARE_CLOSES, CARE_OPENS } from "./care-times.ts";
+import { SERVED_CITIES } from "./served-cities.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
 
 const CONTEXT = "https://schema.org";
@@ -46,6 +50,30 @@ export function webSite(): object {
   };
 }
 
+/** Every day of the week, as Care work it. */
+const EVERY_DAY = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+const careHours = () => ({
+  "@type": "OpeningHoursSpecification",
+  dayOfWeek: EVERY_DAY,
+  opens: CARE_OPENS,
+  closes: CARE_CLOSES,
+});
+
+/** The way to Care: the WhatsApp number, while it is published, in Care's hours. */
+function contactPoint(number: string | undefined): object {
+  if (number === undefined) return {};
+  return {
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer service",
+      telephone: number,
+      url: whatsappChat(whatsapp.number),
+      hoursAvailable: careHours(),
+    },
+  };
+}
+
 export function localBusiness(): object {
   const number = telephone();
   return {
@@ -58,16 +86,19 @@ export function localBusiness(): object {
     image: `${SITE_ORIGIN}/og.png`,
     logo: LOGO,
     parentOrganization: { "@id": ORGANIZATION_ID },
-    areaServed: business.areaServed.map((name) => ({ "@type": "City", name })),
+    areaServed: SERVED_CITIES.map((name) => ({ "@type": "City", name })),
+    openingHoursSpecification: [careHours()],
     ...(number === undefined ? {} : { telephone: number }),
+    ...contactPoint(number),
   };
 }
 
-export function faqPage(): object {
+/** A page's questions, the home page's by default, each as the page shows it. */
+export function faqPage(items: readonly FaqItem[] = faq.items): object {
   return {
     "@context": CONTEXT,
     "@type": "FAQPage",
-    mainEntity: faq.items.map((item) => ({
+    mainEntity: items.map((item) => ({
       "@type": "Question",
       name: item.q,
       acceptedAnswer: { "@type": "Answer", text: item.a },

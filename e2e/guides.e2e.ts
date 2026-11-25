@@ -90,6 +90,28 @@ test("each city has a page of its own, linked from /areas, its areas left for th
   await expect(others.locator("li:not([data-city])")).toHaveCount(0);
 });
 
+// T18: a search for a hair system in Gurgaon lands on Gurgaon's own words, a draft for the founder that this build,
+// like staging's, shows; its questions are the page's FAQ for search engines too.
+test("Gurgaon's page has words and questions of its own, read as its FAQ", async ({ page }) => {
+  await page.goto("/areas/gurgaon");
+  const own = guideCopy.cityWords.Gurgaon;
+  if (own === undefined) throw new Error("Gurgaon has words of its own");
+  // A draft until the founder publishes it, and tagged so; the city's page around it is published, and untagged.
+  await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(own.publish ? 0 : 1);
+  for (const section of own.sections) {
+    await expect(page.getByRole("heading", { level: 2, name: section.heading })).toBeVisible();
+  }
+  const data = await structuredData(page);
+  const faq = data.find((block) => block["@type"] === "FAQPage") as { mainEntity: { name: string }[] } | undefined;
+  expect(faq?.mainEntity.map((question) => question.name)).toEqual(own.questions.map((question) => question.q));
+  await expect(page.locator("summary")).toHaveText(own.questions.map((question) => question.q));
+  expect(JSON.stringify(own)).not.toMatch(/hair patch|Rs\.|₹/i);
+  // Another city, with no words of its own, has no FAQ and no draft.
+  await page.goto("/areas/noida");
+  expect((await structuredData(page)).map((block) => block["@type"])).not.toContain("FAQPage");
+  await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(0);
+});
+
 test("the home page names the company and the site, with the company’s mark", async ({ page }) => {
   await page.goto("/");
   const data = await structuredData(page);

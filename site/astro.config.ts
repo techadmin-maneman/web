@@ -8,13 +8,16 @@
 // consent notice is unapproved (docs/site.md). Afterwards it removes every
 // built asset no page names, so the placeholders staging shows never ship.
 
+import { readFileSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import preact from "@astrojs/preact";
 import { defineConfig } from "astro/config";
 import { RULES_ALIAS } from "../scripts/build/rules-alias.ts";
+import { CARE_HOURS } from "../src/policy/care-hours.ts";
 import { ANALYTICS_IDS } from "./src/lib/analytics-ids.ts";
 import { areasPage, guides } from "./src/content/guides.ts";
+import { business } from "./src/content/site/contact.ts";
 import { shownIn, siteEnvironment } from "./src/lib/environment.ts";
 import { assertPublishable } from "./src/lib/publish-gate.ts";
 import { publishedWordsPlugin, readPublishedWords } from "./src/lib/published-words.ts";
@@ -31,6 +34,31 @@ import {
 } from "./src/lib/static-files.ts";
 
 const environment = siteEnvironment(process.env.MM_ENV);
+
+/** Care's times, as the build read them for this environment (scripts/build/build-site.ts), or the policy's own. */
+function careTimes(): { opens: number; closes: number } {
+  try {
+    const read: unknown = JSON.parse(readFileSync(new URL(".care-times.json", import.meta.url), "utf8"));
+    if (typeof read === "object" && read !== null && "opens" in read && "closes" in read) {
+      const { opens, closes } = read;
+      if (typeof opens === "number" && typeof closes === "number") return { opens, closes };
+    }
+  } catch {
+    // None read: a build for tests, or one before the API gave them.
+  }
+  return { opens: CARE_HOURS.opens, closes: CARE_HOURS.closes };
+}
+
+/** The cities ops serve, as the build read them (scripts/build/build-site.ts), or a local build's own. */
+function servedCities(): readonly string[] {
+  try {
+    const read: unknown = JSON.parse(readFileSync(new URL(".served-cities.json", import.meta.url), "utf8"));
+    if (Array.isArray(read) && read.every((city) => typeof city === "string")) return read;
+  } catch {
+    // None read: a build for tests.
+  }
+  return business.areaServed;
+}
 // Here, so a direct `astro build` is gated too: one refusal for the site's blocks and notices, and for any copy still
 // marked for a person's decision or counsel's (scripts/lib/content-gate.ts).
 if (environment === "production") assertPublishable(contentProblems(CONTENT_FILES.site));
@@ -104,7 +132,11 @@ export default defineConfig({
         readPublishedWords(fileURLToPath(new URL(".words.json", import.meta.url))),
       ),
     ],
-    define: { __MM_ENV__: JSON.stringify(environment) },
+    define: {
+      __MM_ENV__: JSON.stringify(environment),
+      __MM_CARE_TIMES__: JSON.stringify(careTimes()),
+      __MM_SERVED_CITIES__: JSON.stringify(servedCities()),
+    },
     resolve: { alias: RULES_ALIAS },
     // Every asset is a file of its own: the content security policy allows no data: URLs.
     build: { assetsInlineLimit: 0 },

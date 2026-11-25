@@ -3511,6 +3511,11 @@ export interface components {
                 service?: number | null;
                 replacement?: number | null;
             };
+            /** @description When Customer Care are on, in minutes past midnight in India, as ops set them. */
+            care_times: {
+                opens: number;
+                closes: number;
+            };
         };
         /** @description The code is on its way to the number on WhatsApp. */
         NumberCode: {

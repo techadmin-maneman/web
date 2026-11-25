@@ -10,6 +10,7 @@ import { isShown } from "../lib/build.ts";
 import { MORE_PAGES } from "../lib/more-pages.ts";
 import { sectionHref } from "../lib/page-path.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import Icon from "./Icon.astro";
 import Lockup from "./Lockup.astro";
 import Social from "./Social.astro";
 
@@ -39,8 +40,10 @@ const year = new Date().getFullYear();
             <a
               class={textLinkLook({ tone: "ink", quiet: true, className: "item number" })}
               href={whatsappChat(whatsapp.number)}
+              aria-label={whatsapp.label}
             >
-              {whatsapp.label}
+              <Icon name="whatsapp" size="sm" />
+              {whatsapp.display}
             </a>
           </div>
         )}
@@ -146,7 +149,11 @@ const year = new Date().getFullYear();
     font-size: var(--fs-16);
     color: var(--site-on-navy);
   }
+  /* WhatsApp's mark beside the number, as the sticky bar draws it. */
   .number {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-8);
     font-variant-numeric: tabular-nums;
   }
   .bottom {

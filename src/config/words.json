@@ -4104,6 +4104,102 @@
     "reviewed": true
   },
   {
+    "key": "site:guides/cityWords.Gurgaon.sections.0.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "Fitted at your home",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.sections.0.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "Your colour is matched against forty samples in daylight, the grey included, and your hairline is drawn and agreed with you. Nothing is fitted until you say so.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.sections.1.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "What you pay for",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.sections.1.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "You hear the price at the free consultation, before anything is fitted or paid. It depends on the hair system you choose. No deposit, no package.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.sections.2.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "After the fit",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.sections.2.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "A service visit every two to four weeks keeps it at its best, at home: your technician lifts it, cleans it, bonds it again and trims it to your own growth.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.questions.0.q",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "Is the consultation free?",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.questions.0.a",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "Yes. No fee and no deposit, and if it isn’t for you, you owe nothing.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.questions.1.q",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "How is a hair system different from a transplant?",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.questions.1.a",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "A transplant moves hair you still have, and takes months to show. A hair system is real human hair bonded over the area you’ve lost: nothing is cut or moved, and it shows the day it’s fitted.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.questions.2.q",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "Will anyone be able to tell?",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/cityWords.Gurgaon.questions.2.a",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityWords",
+    "text": "Not at conversational distance. The hairline is where it is won or lost, and every hair system we fit has a lace front that melts into the skin. Under a shower, or with a hand run back through the hair, someone could tell.",
+    "reviewed": false
+  },
+  {
     "key": "site:referral/rewardWords.serviceVisit",
     "surface": "site",
     "group": "Invite page",
