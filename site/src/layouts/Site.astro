@@ -28,6 +28,8 @@ interface Props {
   description?: string;
   /** The home page carries the footer and the sticky bar. */
   home?: boolean;
+  /** The home page's sections a page has of its own, which the header's and footer's links then stay on. */
+  sections?: readonly string[];
   /** Pages that should never be indexed, such as the 404. */
   noindex?: boolean;
   /** Schema.org objects, written as JSON-LD. */
@@ -45,6 +47,7 @@ const {
   title,
   description,
   home = false,
+  sections = [],
   noindex = false,
   structuredData = [],
   ogType = "website",
@@ -107,11 +110,11 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
       {header.skip}
     </a>
     <Sprite />
-    <Header />
+    <Header sections={sections} />
     <main id="content" tabindex="-1">
       <slot />
     </main>
-    {home ? <Footer /> : !isFlowPage(path) && <SlimFooter />}
+    {home ? <Footer sections={sections} /> : !isFlowPage(path) && <SlimFooter />}
     {CONSENT_BAR_SHOWN && <ConsentBar />}
     {home && <StickyBar />}
     <script>

@@ -11,10 +11,16 @@ import { textLinkLook } from "@maneman/ui/TextLink";
 import { header, tryOn } from "../content/site.ts";
 import { clientAppOrigin } from "../lib/app-link.ts";
 import { ENVIRONMENT } from "../lib/build.ts";
-import { isBookingPage, isFlowPage, pagePath } from "../lib/page-path.ts";
+import { isBookingPage, isFlowPage, pagePath, sectionHref } from "../lib/page-path.ts";
 import Icon from "./Icon.astro";
 import Lockup from "./Lockup.astro";
 
+interface Props {
+  /** The home page's sections this page has of its own (../layouts/Site.astro). */
+  sections?: readonly string[];
+}
+
+const { sections = [] } = Astro.props;
 const path = pagePath(Astro.url.pathname);
 const booking = isBookingPage(path);
 const trying = path === "/try";
@@ -29,7 +35,7 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
   </a>
   <nav class="sections wide-only" aria-label={header.navLabel}>
     {header.nav.map((link) => (
-      <a class={textLinkLook({ quiet: true, className: "section" })} href={link.href}>
+      <a class={textLinkLook({ quiet: true, className: "section" })} href={sectionHref(link.href, sections)}>
         {link.label}
       </a>
     ))}

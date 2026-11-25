@@ -7,9 +7,11 @@ import { expect, fakeTurnstile, test, visit } from "./support.ts";
 import { atRest, WCAG_22_AA } from "./a11y.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
+import { SCROLLED_TO } from "./site-screens.ts";
 
 const PAGES = [
   "/",
+  "/gurgaon",
   "/try",
   "/try?state=looks",
   "/try?state=gate",
@@ -60,8 +62,8 @@ test.beforeEach(async ({ page }) => {
 
 for (const path of PAGES) {
   test(`${path} meets WCAG 2.2 AA`, async ({ page }) => {
-    // The home page's islands wait to be scrolled to; axe reads the page as it arrives.
-    if (path === "/") await page.goto(path);
+    // The home page's islands, and the Gurgaon page's, wait to be scrolled to; axe reads the page as it arrives.
+    if (SCROLLED_TO.includes(path)) await page.goto(path);
     else await visit(page, path);
     expect(await violations(page)).toEqual([]);
   });

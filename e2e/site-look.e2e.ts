@@ -4,7 +4,7 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, fakeTurnstile, test, visit } from "./support.ts";
 import { answerOpen, mockApi, NOON_2_OCTOBER, openDays, openForm } from "./book-fixtures.ts";
-import { PAGES, SCREENS } from "./site-screens.ts";
+import { PAGES, SCREENS, SCROLLED_TO } from "./site-screens.ts";
 
 test.beforeEach(async ({ page }) => {
   await fakeTurnstile(page);
@@ -16,8 +16,8 @@ for (const path of PAGES) {
     page.on("request", (request) => {
       if (request.resourceType() === "font") files.push(new URL(request.url()).pathname);
     });
-    // The home page's islands wait to be scrolled to, so it is opened, not visited (e2e/accessibility.e2e.ts).
-    if (path === "/") await page.goto(path);
+    // The home page's islands, and the Gurgaon page's, wait to be scrolled to, so they are opened, not visited.
+    if (SCROLLED_TO.includes(path)) await page.goto(path);
     else await visit(page, path);
     const families = await page.evaluate(async () => {
       await document.fonts.ready;

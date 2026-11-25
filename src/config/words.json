@@ -1824,6 +1824,14 @@
     "reviewed": true
   },
   {
+    "key": "site:pages/pageTitles.gurgaon",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Hair systems fitted at home in Gurgaon — Mane Man",
+    "reviewed": false
+  },
+  {
     "key": "site:pages/pageTitles.tryOn",
     "surface": "site",
     "group": "Page titles",
@@ -1918,6 +1926,14 @@
     "where": "pageDescriptions",
     "text": "Hair systems in 100% real human hair, fitted at your home across Delhi NCR. The consultation is free.",
     "reviewed": true
+  },
+  {
+    "key": "site:pages/pageDescriptions.gurgaon",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageDescriptions",
+    "text": "Hair systems in 100% real human hair, fitted at your home in Gurgaon. The consultation is free.",
+    "reviewed": false
   },
   {
     "key": "site:pages/pageDescriptions.tryOn",
