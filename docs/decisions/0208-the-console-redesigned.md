@@ -1,6 +1,7 @@
 # 0208. The console redesigned: work first, Settings in one place, and two themes
 
-- Status: accepted
+- Status: accepted. Amended by [ADR 0318](0318-care-team-beside-messages.md): Care's team is also a page under
+  Messages, as its shift, leave and moving clients are Care's work.
 - Date: 2026-10-15
 - Topic: The ops console
 - Amends [0109](0109-console-departments-and-access.md) on how the navigation is grouped; access is unchanged

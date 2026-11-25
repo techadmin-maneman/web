@@ -10,7 +10,7 @@ Care answer in their own words, from our number, and every reply is kept in the 
 
 ## Who answers, and by when
 
-Each client has a named Care person, given at their first chat to the one with the fewest (`src/domain/care/care-people.ts`). Each member goes on and off shift, and a Customer Care manager sets days off, leave and who covers them, on Care team beside Messages, also in Settings · Care (`src/domain/care/cover.ts`).
+Each client has a named Care person, given at their first chat to the one with the fewest (`src/domain/care/care-people.ts`). Each member goes on and off shift, and a Customer Care manager sets days off and leave and moves every client of one member to another, on Care team beside Messages, also in Settings · Care; who covers whom follows from them, worked out as it is read (`src/domain/care/cover.ts`).
 
 The reply clock counts in Care's hours, set in Settings · Rules (`care_hours`): a chat past its reply-by time becomes a task on the Tasks board (`src/domain/care/chat-tasks.ts`). A message outside Care's hours gets, once a night, a word on when Care are back (`src/domain/care/after-hours.ts`). The Care numbers say whether the same-day promise held over a period (`src/domain/care/care-numbers.ts`).
 

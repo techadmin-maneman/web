@@ -91,6 +91,12 @@
     height: calc(100dvh - var(--local-room-above));
   }
 
+  /* With the navigation folded, Messages' pages stand as tabs above the box (../frame/group-tabs.module.css), and it
+     leaves their row in view as well, so the reply box stays above the window's foot. */
+  :global(body:has(#console-nav[data-folded="true"])) .inbox {
+    --local-room-above: 15rem;
+  }
+
   .list {
     overflow-y: auto;
     border-right: var(--hairline) solid var(--ui-line);

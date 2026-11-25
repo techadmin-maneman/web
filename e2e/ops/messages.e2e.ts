@@ -184,8 +184,13 @@ test("opens the Care team beside the chats, where a member goes on shift without
     },
   });
   await page.goto("/messages");
+  // The trail names Messages once, with nothing to follow back to the page it is on.
+  const trail = page.getByRole("navigation", { name: "Breadcrumb" });
+  await expect(trail).toHaveText("Messages");
+  await expect(trail.getByRole("link")).toHaveCount(0);
   await page.getByRole("link", { name: copy.team.title, exact: true }).click();
   await expect(page).toHaveURL(/\/care-team$/);
+  await expect(trail.getByRole("link", { name: "Messages" })).toHaveAttribute("href", "/messages");
   await expect(page.getByRole("heading", { level: 1, name: copy.team.title })).toBeVisible();
   await page.getByRole("button", { name: copy.team.goOn }).click();
   await expect.poll(() => sent).toEqual({ on: true });
