@@ -1,6 +1,7 @@
 // The footer's last line: the company's notices, then the area and the company's pages elsewhere, kept together at
 // its end however it wraps (site/src/components/Footer.astro).
 import { expect, test } from "./support.ts";
+import * as siteCopy from "../site/src/content/site.ts";
 
 // At about 900 px the company's icons fell alone to the left of a second line.
 for (const width of [768, 900, 1024]) {
@@ -26,3 +27,15 @@ for (const width of [768, 900, 1024]) {
     expect(Math.abs(icons.middle - (area.y + area.height / 2))).toBeLessThan(area.height);
   });
 }
+
+test("links the company's pages elsewhere, and draws WhatsApp's own mark beside the number", async ({ page }) => {
+  await page.goto("/guides");
+  const foot = page.locator("footer");
+  for (const link of siteCopy.socialLinks.links) {
+    await expect(foot.getByRole("link", { name: link.label })).toHaveAttribute("href", link.href);
+  }
+  // Filled, as WhatsApp draws it, not in the icon set's line.
+  const mark = foot.getByRole("link", { name: siteCopy.whatsapp.label }).locator("svg");
+  await expect(mark).toHaveAttribute("fill", "currentColor");
+  await expect(mark).toHaveAttribute("stroke", "none");
+});

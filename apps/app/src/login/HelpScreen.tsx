@@ -3,7 +3,7 @@
 // has a booking (docs/decisions/0030-one-time-codes.md).
 
 import { IconButton } from "@maneman/ui/IconButton";
-import { ICONS } from "@maneman/brand/icons";
+import { BRAND_MARKS, ICONS } from "@maneman/brand/icons";
 import { ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -38,7 +38,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
             href={whatsappChat(whatsapp.number)}
             rel="noopener"
           >
-            <Icon d={ICONS.whatsapp} size="sm" />
+            <Icon d={BRAND_MARKS.whatsapp} size="sm" />
             {copy.message}
           </ButtonLink>
         </div>

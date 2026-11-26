@@ -1,5 +1,5 @@
 import { ButtonLink } from "@maneman/ui/Button";
-import { ICONS } from "@maneman/brand/icons";
+import { BRAND_MARKS } from "@maneman/brand/icons";
 import { tryOn } from "../../content/site.ts";
 import { Icon } from "@maneman/ui/Icon";
 import type { TryOnState } from "./machine.ts";
@@ -34,7 +34,7 @@ export function Sent(props: {
       {look === null && (
         <>
           <span class={styles.tile}>
-            <Icon d={ICONS.whatsapp} size="md" />
+            <Icon d={BRAND_MARKS.whatsapp} size="md" />
           </span>
           <p class={shared.stepLabel}>{tryOn.sent.frame}</p>
         </>

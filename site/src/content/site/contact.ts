@@ -13,16 +13,13 @@ export const whatsapp = {
   greeting: "Hi, I’d like to know more.",
 };
 
-/**
- * The company's pages elsewhere, beside the number in the footer. Their addresses are still to come: until they are
- * here and the block is published, they show outside production only, and lead nowhere.
- */
+/** The company's pages elsewhere, beside the number in the footer, and named to search engines as the company's. */
 export const socialLinks = {
-  publish: false,
+  publish: true,
   links: [
-    { icon: "linkedin", label: "Mane Man on LinkedIn", href: null },
-    { icon: "instagram", label: "Mane Man on Instagram", href: null },
-  ] satisfies { icon: "linkedin" | "instagram"; label: string; href: string | null }[],
+    { icon: "linkedin", label: "Mane Man on LinkedIn", href: "https://www.linkedin.com/company/mane-man/" },
+    { icon: "instagram", label: "Mane Man on Instagram", href: "https://www.instagram.com/maneman.official" },
+  ] satisfies { icon: "linkedin" | "instagram"; label: string; href: string }[],
 };
 
 /**

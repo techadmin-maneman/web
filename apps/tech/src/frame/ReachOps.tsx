@@ -2,7 +2,7 @@
 // arrives in the console's Care inbox. On paper each carries its icon, as the prototype draws them; where ops are the
 // screen's one ask, under a title that names them, as Me's Contact sheet, the call is filled and each says its way alone.
 
-import { GLYPHS } from "@maneman/brand/icons";
+import { BRAND_MARKS, GLYPHS } from "@maneman/brand/icons";
 import { ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { OPS_NUMBER, whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -37,7 +37,7 @@ export function ReachOps({
         target="_blank"
         rel="noopener noreferrer"
       >
-        {onPaper && <Icon d={GLYPHS.bubble} size="sm" />}
+        {onPaper && <Icon d={BRAND_MARKS.whatsapp} size="sm" />}
         <span>{asOne ? copy.whatsAppShort : copy.whatsApp}</span>
       </ButtonLink>
     </div>

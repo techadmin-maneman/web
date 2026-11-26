@@ -8,7 +8,7 @@
 // design draws Refer for a lead as reachable but empty. It says when their invite opens, and names the invite they
 // came with while its visits wait on their fit.
 
-import { APP_ICONS, GLYPHS, ICONS } from "@maneman/brand/icons";
+import { APP_ICONS, BRAND_MARKS, GLYPHS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { NumberedSteps } from "@maneman/ui/NumberedSteps";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
@@ -130,7 +130,7 @@ function ShareActions({ link, onShare }: { link: string; onShare: () => void }) 
   return (
     <div className={styles.ways}>
       <Button variant="primary" size="action" className={shared.share} onClick={onShare}>
-        <Icon d={ICONS.whatsapp} size="md" />
+        <Icon d={BRAND_MARKS.whatsapp} size="md" />
         {refer.inviteOnWhatsApp}
       </Button>
       <div className={styles.waysRow}>
