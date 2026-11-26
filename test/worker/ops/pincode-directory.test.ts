@@ -73,9 +73,11 @@ describe("reading the directory", () => {
     });
   });
 
-  it("takes up to ten districts", async () => {
-    const eleven = Array.from({ length: 11 }, (_, at) => `district=D${String(at)}`).join("&");
-    expect((await get(ops, `/api/pincode-directory/pincodes?state=DELHI&${eleven}`)).status).toBe(400);
+  // Ten at a time took two looks to open Delhi's eleven districts.
+  it("takes every district a state has, and refuses more than a hundred", async () => {
+    const districts = (count: number) => Array.from({ length: count }, (_, at) => `district=D${String(at)}`).join("&");
+    expect((await get(ops, `/api/pincode-directory/pincodes?state=DELHI&${districts(75)}`)).status).toBe(200);
+    expect((await get(ops, `/api/pincode-directory/pincodes?state=DELHI&${districts(101)}`)).status).toBe(400);
   });
 });
 

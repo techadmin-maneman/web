@@ -3016,7 +3016,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The pincodes of up to ten of a state's districts, with what each area would be called */
+        /** The pincodes of a state's districts, with what each area would be called */
         get: {
             parameters: {
                 query: {
@@ -3039,7 +3039,7 @@ export interface paths {
                         "application/json": components["schemas"]["DirectoryPincodes"];
                     };
                 };
-                /** @description invalid_request: no state, or no district or more than ten */
+                /** @description invalid_request: no state, or no district or more than a hundred */
                 400: {
                     headers: {
                         [name: string]: unknown;

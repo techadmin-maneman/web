@@ -65,12 +65,13 @@ const districtsRoute = opsRoute({
 const pincodesRoute = opsRoute({
   method: "get",
   path: "/api/pincode-directory/pincodes",
-  summary: "The pincodes of up to ten of a state's districts, with what each area would be called",
+  summary: "The pincodes of a state's districts, with what each area would be called",
   request: {
     query: z.object({
       state: NAME,
       district: z
-        .union([NAME, z.array(NAME).min(1).max(10)])
+        // More than any state has: Uttar Pradesh has 75.
+        .union([NAME, z.array(NAME).min(1).max(100)])
         .transform((value) => (Array.isArray(value) ? value : [value]))
         .openapi({ description: "Named once for each district." }),
     }),
@@ -102,7 +103,7 @@ const pincodesRoute = opsRoute({
           .openapi("DirectoryPincodes"),
       ),
     },
-    400: errorResponse("invalid_request: no state, or no district or more than ten"),
+    400: errorResponse("invalid_request: no state, or no district or more than a hundred"),
   },
 });
 

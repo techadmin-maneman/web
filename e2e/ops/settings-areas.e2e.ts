@@ -407,6 +407,13 @@ test.describe("the service area", () => {
     await form.getByRole("button", { name: directory.show }).click();
     await expect(form.getByLabel(directory.tick("400001", "Fort"))).toBeDisabled();
     await expect(form.getByLabel(directory.tick("400050", "Bandra West"))).toBeChecked();
+    // One already held is greyed out too, so a list held whole reads as nothing to add.
+    const ink = (pincode: string) =>
+      form
+        .getByRole("row", { name: new RegExp(pincode) })
+        .getByRole("rowheader")
+        .evaluate((cell) => getComputedStyle(cell).color);
+    expect(await ink("400001")).not.toBe(await ink("400050"));
 
     await form.getByLabel(directory.city).selectOption("Mumbai");
     const sent = posted(page, "/api/pincodes/from-directory");

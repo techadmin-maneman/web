@@ -4171,7 +4171,7 @@ A state's districts, each with its pincodes and how many the service area holds
 
 ### GET /api/pincode-directory/pincodes
 
-The pincodes of up to ten of a state's districts, with what each area would be called
+The pincodes of a state's districts, with what each area would be called
 
 **200**: The pincodes, in order
 
@@ -4181,7 +4181,7 @@ The pincodes of up to ten of a state's districts, with what each area would be c
 }
 ```
 
-**400**: invalid_request: no state, or no district or more than ten
+**400**: invalid_request: no state, or no district or more than a hundred
 
 ```json
 {
