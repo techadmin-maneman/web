@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { GLYPHS, ICONS, APP_ICONS } from "../../../packages/brand/icons.ts";
+import { GLYPHS, ICONS, APP_ICONS, BRAND_MARKS, isBrandMark } from "../../../packages/brand/icons.ts";
 import { MARK, WORDMARK, WORDMARK_SMALL, type Drawing } from "../../../packages/brand/marks.ts";
 
 const SPEC_BOARDS = ["Client App", "Referral and Waitlist", "Technician App", "Ops Console"].map((board) =>
@@ -64,6 +64,14 @@ describe("icons", () => {
       .filter((path) => /\.(tsx|astro)$/.test(path))
       .filter((path) => /stroke-?[wW]idth=\{?"?\d/.test(readFileSync(path, "utf8")));
     expect(drawn).toEqual([]);
+  });
+
+  // WhatsApp drawn in the set's line read as a smudge at a footer's or a button's size.
+  it("keeps other companies' marks apart from the set's lines, to be drawn filled", () => {
+    expect(isBrandMark(BRAND_MARKS.whatsapp)).toBe(true);
+    expect(isBrandMark(ICONS.whatsapp)).toBe(false);
+    const lines = new Set<string>([...Object.values(ICONS), ...Object.values(APP_ICONS), ...Object.values(GLYPHS)]);
+    expect(Object.values(BRAND_MARKS).filter((mark) => lines.has(mark))).toEqual([]);
   });
 
   it("ICONS is frozen as the Phase 1 site draws it", () => {

@@ -6,7 +6,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { IconButton } from "@maneman/ui/IconButton";
 import { classes } from "@maneman/ui/classes";
-import { GLYPHS, ICONS } from "@maneman/brand/icons";
+import { BRAND_MARKS, GLYPHS, ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { NoticeLine } from "@maneman/ui/NoticeLine";
@@ -220,7 +220,7 @@ export function ShareStep({ flow, onClose }: StepProps) {
                 void flow.sharing(() => navigator.share(shared));
               }}
             >
-              <Icon d={ICONS.whatsapp} size="md" />
+              <Icon d={BRAND_MARKS.whatsapp} size="md" />
               <span>{refer.preview.whatsapp}</span>
             </ButtonLink>
             <Button

@@ -4,7 +4,7 @@
 
 import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { badgeLook } from "@maneman/ui/Caps";
-import { ICONS } from "@maneman/brand/icons";
+import { BRAND_MARKS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Drawer } from "@maneman/ui/Drawer";
@@ -90,7 +90,7 @@ function Contacts({ person }: { readonly person: NonNullable<Props["job"]["block
         href={whatsappChat(person.mobile)}
         target="_blank"
         rel="noopener noreferrer"
-        icon={ICONS.whatsapp}
+        icon={BRAND_MARKS.whatsapp}
         iconSize="md"
       >
         {copy.whatsapp(firstNameOf(person.name))}

@@ -110,5 +110,8 @@ test("the home page names the company and the site, with the company’s mark", 
   await page.goto("/");
   const data = await structuredData(page);
   expect(data.map((block) => block["@type"])).toEqual(["Organization", "WebSite", "LocalBusiness", "FAQPage"]);
-  expect(data[0]).toMatchObject({ logo: "https://maneman.in/icon-512.png" });
+  expect(data[0]).toMatchObject({
+    logo: "https://maneman.in/icon-512.png",
+    sameAs: siteCopy.socialLinks.links.map((link) => link.href),
+  });
 });

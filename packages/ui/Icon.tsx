@@ -1,8 +1,8 @@
-import { ICON_SIZES, ICON_STROKES, type IconSize, type IconWeight } from "@maneman/brand/icons";
+import { ICON_SIZES, ICON_STROKES, isBrandMark, type IconSize, type IconWeight } from "@maneman/brand/icons";
 
 /**
  * A line icon in a 24 px box, drawn in the surrounding text colour, at one of the set's sizes. The technician app
- * draws the heavy stroke, for reading in the sun.
+ * draws the heavy stroke, for reading in the sun. Another company's mark (BRAND_MARKS) is drawn filled.
  */
 export function Icon({
   d,
@@ -16,14 +16,15 @@ export function Icon({
   className?: string;
 }) {
   const px = ICON_SIZES[size];
+  const mark = isBrandMark(d);
   return (
     <svg
       className={className}
       viewBox="0 0 24 24"
       width={px}
       height={px}
-      fill="none"
-      stroke="currentColor"
+      fill={mark ? "currentColor" : "none"}
+      stroke={mark ? "none" : "currentColor"}
       strokeWidth={ICON_STROKES[weight]}
       strokeLinecap="round"
       strokeLinejoin="round"

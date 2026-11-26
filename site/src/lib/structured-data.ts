@@ -4,7 +4,7 @@
 // hours are Customer Care's, every day (docs/decisions/0325-search-pages-and-opening-hours.md).
 
 import type { Guide } from "../content/guides.ts";
-import { business, faq, whatsapp } from "../content/site.ts";
+import { business, faq, socialLinks, whatsapp } from "../content/site.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { CARE_CLOSES, CARE_OPENS } from "./care-times.ts";
 import { SERVED_CITIES } from "./served-cities.ts";
@@ -35,8 +35,11 @@ const company = () => ({
   url: `${SITE_ORIGIN}/`,
 });
 
+/** The company's pages elsewhere, which search engines take as the same company's. */
+const sameAs = (): string[] => (socialLinks.publish ? socialLinks.links.map((link) => link.href) : []);
+
 export function organization(): object {
-  return { "@context": CONTEXT, ...company(), logo: LOGO };
+  return { "@context": CONTEXT, ...company(), logo: LOGO, sameAs: sameAs() };
 }
 
 export function webSite(): object {

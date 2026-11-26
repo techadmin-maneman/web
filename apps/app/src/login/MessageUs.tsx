@@ -1,6 +1,6 @@
 // The way out of a limit on codes: a WhatsApp chat with us, under the line that names the limit.
 
-import { ICONS } from "@maneman/brand/icons";
+import { BRAND_MARKS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { TextLink } from "@maneman/ui/TextLink";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -10,7 +10,7 @@ import styles from "./login.module.css";
 export function MessageUs() {
   return (
     <TextLink tone="plain" className={styles.link} href={whatsappChat(whatsapp.number)}>
-      <Icon d={ICONS.whatsapp} size="sm" />
+      <Icon d={BRAND_MARKS.whatsapp} size="sm" />
       <span>{login.messageUs}</span>
     </TextLink>
   );

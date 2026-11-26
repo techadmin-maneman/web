@@ -7,7 +7,7 @@ import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { FoundUs } from "./FoundUs.tsx";
 import { LeadStages } from "./LeadStages.tsx";
 import { Button, ButtonLink } from "@maneman/ui/Button";
-import { ICONS } from "@maneman/brand/icons";
+import { BRAND_MARKS } from "@maneman/brand/icons";
 import { PageTitle } from "@maneman/ui/PageHeader";
 import { NamedSteps } from "@maneman/ui/Progress";
 import { Stack } from "@maneman/ui/Layout";
@@ -83,7 +83,7 @@ function WhatsApp({ record }: { record: ClientRecord }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={clients.whatsappLabel(record.name)}
-      icon={ICONS.whatsapp}
+      icon={BRAND_MARKS.whatsapp}
       iconSize="md"
     >
       {clients.whatsapp}

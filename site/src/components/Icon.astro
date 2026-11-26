@@ -1,18 +1,26 @@
 ---
 // A line icon from @maneman/brand/icons, drawn in the surrounding text colour at one of the set's sizes, as the
-// shared Icon draws it in the islands and the apps.
+// shared Icon draws it in the islands and the apps; another company's mark, as WhatsApp's, drawn filled.
 import {
+  BRAND_MARKS,
   CLIENT_ICONS,
   GLYPHS,
   ICON_SIZES,
   ICON_STROKES,
   ICONS,
+  isBrandMark,
   SOCIAL_ICONS,
   type IconSize,
   type IconWeight,
 } from "@maneman/brand/icons";
 
-const PATHS = { ...ICONS, ...SOCIAL_ICONS, user: CLIENT_ICONS.user, chevron: GLYPHS.chevron };
+const PATHS = {
+  ...ICONS,
+  ...SOCIAL_ICONS,
+  whatsapp: BRAND_MARKS.whatsapp,
+  user: CLIENT_ICONS.user,
+  chevron: GLYPHS.chevron,
+};
 
 interface Props {
   name: keyof typeof PATHS;
@@ -23,6 +31,7 @@ interface Props {
 
 const { name, size, weight = "regular", class: className } = Astro.props;
 const px = ICON_SIZES[size];
+const mark = isBrandMark(PATHS[name]);
 ---
 
 <svg
@@ -30,8 +39,8 @@ const px = ICON_SIZES[size];
   viewBox="0 0 24 24"
   width={px}
   height={px}
-  fill="none"
-  stroke="currentColor"
+  fill={mark ? "currentColor" : "none"}
+  stroke={mark ? "none" : "currentColor"}
   stroke-width={ICON_STROKES[weight]}
   stroke-linecap="round"
   stroke-linejoin="round"
