@@ -16,9 +16,10 @@
 // The built films are given a byte range at a time, which the assets cannot do: iOS Safari plays a video only from a
 // server that can.
 //
-// The home page, the Gurgaon page and /areas name the cities ops serve (GET /api/served-cities), kept a minute as the reward is, so a
-// launch reaches the site without a rebuild; each sentence that names them is built naming none. A city's page,
-// /areas/<city>, lists the areas served there, which it is built without.
+// The home page, /areas and each city's page name the cities ops serve (GET /api/served-cities), kept a minute as the
+// reward is, so a launch reaches the site without a rebuild; each sentence that names them is built naming none. A
+// city's page, /areas/<city>, lists the areas served there, which it is built without. /gurgaon, where Gurgaon's paid
+// ads first landed, is Gurgaon's page now (docs/decisions/0326-one-page-per-city.md).
 //
 // Every page goes through the Worker, which gives its content security policy a nonce of the request's own. Cloudflare
 // reads it from the policy and puts it on any script it adds to the page at its edge, so one switched back on for the
@@ -52,7 +53,19 @@ const NO_CODE = /^\/r\/?$/;
 const FILM = /^\/_astro\/[^/]+\.mp4$/;
 
 /** The pages that name the cities we come to. */
-const CITY_PAGES = new Set(["/", "/gurgaon", "/areas"]);
+const CITY_PAGES = new Set(["/", "/areas"]);
+
+/** Where Gurgaon's paid ads first landed, and the city's page it leads to, with the ad's tags. */
+const GURGAON = { from: "/gurgaon", to: "/areas/gurgaon" } as const;
+
+/** /gurgaon, sent on to Gurgaon's page for good; to /areas while that page is not built, as for a city served nowhere. */
+async function toGurgaon(visit: Request, env: SiteEnv, url: URL): Promise<Response> {
+  const page = await env.ASSETS.fetch(builtFile(visit, `${url.origin}${GURGAON.to}`));
+  await page.body?.cancel();
+  return page.ok
+    ? Response.redirect(`${url.origin}${GURGAON.to}${url.search}`, 301)
+    : Response.redirect(`${url.origin}/areas${url.search}`, 302);
+}
 
 /** A city's own page. */
 const CITY_PAGE = /^\/areas\/[a-z0-9-]+$/;
@@ -344,7 +357,7 @@ const escaped = (text: string): string =>
 
 /**
  * A city's areas, on its page: the list its data-areas-of names filled, and its section, built hidden, shown. A city
- * with none served keeps both as built.
+ * with none to list keeps both as built.
  */
 class AreasListed {
   private readonly areas: Readonly<Record<string, readonly string[]>>;
@@ -353,8 +366,9 @@ class AreasListed {
     this.areas = areas;
   }
 
+  /** A city's areas, but the one named for the city itself: a post office of that name says nothing the page has not. */
   private of(city: string | null): readonly string[] {
-    return city === null ? [] : (this.areas[city] ?? []);
+    return city === null ? [] : (this.areas[city] ?? []).filter((area) => area !== city);
   }
 
   element(element: Element): void {
@@ -363,9 +377,7 @@ class AreasListed {
       if (this.of(section).length > 0) element.removeAttribute("hidden");
       return;
     }
-    // A post office named for the city itself says nothing the page has not.
-    const city = element.getAttribute("data-areas-of");
-    const areas = this.of(city).filter((area) => area !== city);
+    const areas = this.of(element.getAttribute("data-areas-of"));
     if (areas.length > 0) {
       element.setInnerContent(areas.map((area) => `<li>${escaped(area)}</li>`).join(""), { html: true });
     }
@@ -449,6 +461,7 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
     const url = new URL(request.url);
     if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
     if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
+    if (url.pathname === GURGAON.from) return toGurgaon(request, env, url);
     const token = PAY_LINK.exec(url.pathname)?.[1];
     if (token !== undefined) return payLink(env, request, url.origin, token);
     const link = CAMPAIGN_LINK.exec(url.pathname);

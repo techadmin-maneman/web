@@ -7,8 +7,8 @@
 // Over it the opening line shows one phrase at a time, round and round,
 // until Pause stops it with the film; a screen reader hears the whole line
 // once, and reduced motion shows the last phrase alone. Restyled in Plex on the page's column, the area at the top
-// left and Pause at the top right, Book gold and first (ADR 0264). A page may give its own footage: the Gurgaon
-// page's is its clients' (ADR 0321).
+// left and Pause at the top right, Book gold and first (ADR 0264). A city's page names its city at the top left, and
+// may give its own footage, as Gurgaon's gives its clients'.
 import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
 import { hero, heroFootage, type HeroFootage } from "../../content/site.ts";
@@ -18,10 +18,12 @@ import { heroPosters, PHONE_POSTER } from "../../lib/hero.ts";
 import { designMedia } from "../../lib/images.ts";
 
 interface Props {
-  footage?: HeroFootage;
+  footage?: HeroFootage | undefined;
+  /** Where the service is, at the top left: the home page's own line unless a city's page names its city. */
+  area?: string;
 }
 
-const { footage = heroFootage } = Astro.props;
+const { footage = heroFootage, area = hero.area } = Astro.props;
 const posters = await heroPosters(footage);
 const showFootage = isShown(footage);
 ---
@@ -49,7 +51,7 @@ const showFootage = isShown(footage);
   <div class="scrim scrim--up"></div>
   <div class="scrim scrim--side"></div>
   {isTaggedPlaceholder(footage) && showFootage && <div class={capsLook("label tag")}>{footage.tag}</div>}
-  <p class="area">{hero.area}</p>
+  <p class="area">{area}</p>
   <button
     type="button"
     class={buttonLook({ variant: "outlineOnNavy", size: "small", className: "pause" })}

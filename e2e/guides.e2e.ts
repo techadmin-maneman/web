@@ -2,7 +2,7 @@
 
 import { expect, test } from "./support.ts";
 import * as guideCopy from "../site/src/content/guides.ts";
-import { placeholderTag } from "../site/src/content/site.ts";
+import * as siteCopy from "../site/src/content/site.ts";
 
 test("lists every guide, and each opens with its title, the way back and a way to book", async ({ page }) => {
   await page.goto("/guides");
@@ -18,7 +18,7 @@ test("lists every guide, and each opens with its title, the way back and a way t
     page.getByRole("main").getByRole("link", { name: guideCopy.guidesPage.title, exact: true }),
   ).toHaveAttribute("href", "/guides");
   // Approved, so no draft tag.
-  await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(siteCopy.placeholderTag, { exact: true })).toHaveCount(0);
   for (const section of first.sections)
     await expect(page.getByRole("heading", { level: 2, name: section.heading })).toBeVisible();
   await expect(page.getByRole("main").getByRole("link", { name: guideCopy.guidesPage.book })).toHaveAttribute(
@@ -69,8 +69,9 @@ test("a guide tells search engines it is an article, dated, by the company, with
   await expect(related.getByRole("link", { name: guideCopy.guidesPage.questions })).toHaveAttribute("href", "/#faq");
 });
 
-// /areas was one page of five names, where a search for a hair system in a city found nothing of that city.
-test("each city has a page of its own, linked from /areas, its areas left for the Worker to list", async ({ page }) => {
+// /areas was one page of five names, where a search for a hair system in a city found nothing of that city; then
+// Gurgaon had two pages for one search, and its own had draft words (docs/decisions/0326-one-page-per-city.md).
+test("each city has its full page, linked from /areas, its areas left for the Worker to list", async ({ page }) => {
   await page.goto("/areas");
   const city = "Gurgaon";
   const title = guideCopy.cityPage.title.replace("{city}", city);
@@ -79,37 +80,30 @@ test("each city has a page of its own, linked from /areas, its areas left for th
   await expect(cities.locator("li:not([data-city])")).toHaveCount(0);
   await cities.getByRole("link", { name: title }).click();
   await expect(page).toHaveURL(/\/areas\/gurgaon$/);
-  await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
-  await expect(
-    page.getByRole("main").getByRole("link", { name: guideCopy.areasPage.title, exact: true }),
-  ).toHaveAttribute("href", "/areas");
-  await expect(page.locator("[data-city-areas]")).toBeHidden();
-  await expect(page.getByRole("link", { name: guideCopy.cityPage.check })).toHaveAttribute("href", "/book");
-  const others = page.getByRole("navigation", { name: guideCopy.cityPage.others });
-  await expect(others.getByRole("link", { name: /Hair systems in/ })).toHaveCount(4);
-  await expect(others.locator("li:not([data-city])")).toHaveCount(0);
+  await expect(page).toHaveTitle(guideCopy.cityPage.pageTitle.replace("{city}", city));
+  await expect(page.getByText(guideCopy.cityPage.area.replace("{city}", city), { exact: true })).toBeVisible();
+  // Built hidden and empty: the Worker lists the areas served there, and shows them.
+  const areas = page.locator(`[data-city-areas="${city}"]`);
+  await expect(areas).toBeHidden();
+  await expect(areas.locator(`ul[data-areas-of="${city}"]`)).toHaveCount(1);
+  await expect(areas.locator('a[href="/book"]')).toHaveText(guideCopy.cityPage.check);
+  // The footer's link names its city too, so the Worker leaves it out once the city is served nowhere.
+  await expect(page.locator(`footer a[data-city="${city}"]`)).toHaveAttribute("href", "/areas/gurgaon");
+  // The home page's questions, which are the page's FAQ for search engines too, and nothing tagged.
+  await expect(page.locator("#faq summary")).toHaveText(siteCopy.faq.items.map((item) => item.q));
+  const data = await structuredData(page);
+  expect(data.map((block) => block["@type"])).toEqual(["Organization", "LocalBusiness", "FAQPage", "BreadcrumbList"]);
+  await expect(page.getByText(siteCopy.placeholderTag, { exact: true })).toHaveCount(0);
 });
 
-// T18: a search for a hair system in Gurgaon lands on Gurgaon's own words, a draft for the founder that this build,
-// like staging's, shows; its questions are the page's FAQ for search engines too.
-test("Gurgaon's page has words and questions of its own, read as its FAQ", async ({ page }) => {
-  await page.goto("/areas/gurgaon");
-  const own = guideCopy.cityWords.Gurgaon;
-  if (own === undefined) throw new Error("Gurgaon has words of its own");
-  // A draft until the founder publishes it, and tagged so; the city's page around it is published, and untagged.
-  await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(own.publish ? 0 : 1);
-  for (const section of own.sections) {
-    await expect(page.getByRole("heading", { level: 2, name: section.heading })).toBeVisible();
-  }
-  const data = await structuredData(page);
-  const faq = data.find((block) => block["@type"] === "FAQPage") as { mainEntity: { name: string }[] } | undefined;
-  expect(faq?.mainEntity.map((question) => question.name)).toEqual(own.questions.map((question) => question.q));
-  await expect(page.locator("summary")).toHaveText(own.questions.map((question) => question.q));
-  expect(JSON.stringify(own)).not.toMatch(/hair patch|Rs\.|₹/i);
-  // Another city, with no words of its own, has no FAQ and no draft.
+test("gives a city with no footage of its own the home page's hero, naming it, and no clients' films", async ({
+  page,
+}) => {
   await page.goto("/areas/noida");
-  expect((await structuredData(page)).map((block) => block["@type"])).not.toContain("FAQPage");
-  await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(guideCopy.cityPage.area.replace("{city}", "Noida"), { exact: true })).toBeVisible();
+  await expect(page.locator("[data-hero-video]")).toHaveAttribute("data-phone-film", /fit-film-phone/);
+  await expect(page.locator('[data-section="films"]')).toHaveCount(0);
+  await expect(page.getByRole("button", { name: siteCopy.founderFilm.play, exact: true })).toHaveCount(1);
 });
 
 test("the home page names the company and the site, with the company’s mark", async ({ page }) => {

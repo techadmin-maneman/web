@@ -1,24 +1,30 @@
 ---
-// Nitin's fit on the Gurgaon page, on navy (docs/decisions/0321-the-gurgaon-page.md): before and after, then in his
-// own words, each playing when it is tapped. Side by side across the page's column on a laptop, one after the other
-// on a phone.
+// A city's own clients' films on its page, on navy (docs/decisions/0321-the-gurgaon-page.md): Gurgaon's are Nitin's
+// fit, before and after, then in his own words, each playing when it is tapped. Side by side across the page's column
+// on a laptop, one after the other on a phone.
 import FilmCard from "../FilmCard.astro";
-import { gurgaonFilms } from "../../content/site.ts";
+import type { CityFilms } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
+
+interface Props {
+  films: CityFilms;
+}
+
+const { films } = Astro.props;
 
 /** Half the page's column on a laptop, about 512 px at its widest; the whole width on a phone. */
 const sizes = "(min-width: 761px) 50vw, 100vw";
 ---
 
-{isShown(gurgaonFilms) && (
+{isShown(films) && (
   <section class="band ground-navy" data-section="films" data-ground="ink" aria-labelledby="films-title">
     <div class="container">
-      <p class="eyebrow">{gurgaonFilms.eyebrow}</p>
+      <p class="eyebrow">{films.eyebrow}</p>
       <h2 class="section-title" id="films-title">
-        {gurgaonFilms.title}
+        {films.title}
       </h2>
       <div class="films">
-        {gurgaonFilms.films.map((film) => (
+        {films.films.map((film) => (
           <FilmCard film={film} sizes={sizes} />
         ))}
       </div>

@@ -93,7 +93,6 @@
   --site-lockup-gap: 0.3225;
   --site-lockup-header: 30px;
   --site-lockup-footer: var(--sp-36);
-  --site-lockup-slim: 34px;
 
   /* ---- The pages of text: the guides, the cities, the policies, the notices, /stop and the 404 ---- */
   --site-fs-page-title: clamp(30px, calc(24.8px + 1.333vw), 44px);
@@ -128,7 +127,6 @@
     --site-header-h: var(--sp-72);
     --site-lockup-header: var(--sp-40);
     --site-lockup-footer: var(--sp-40);
-    --site-lockup-slim: var(--sp-36);
   }
 }
 

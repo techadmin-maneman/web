@@ -4,7 +4,7 @@
 // no file of the brand's is copied into the site.
 interface Props {
   /** Where it stands, which sets its height (site/src/styles/tokens-site.css). */
-  size: "header" | "footer" | "slim";
+  size: "header" | "footer";
   tone: "navy" | "white";
 }
 
@@ -31,9 +31,6 @@ const { size, tone } = Astro.props;
   }
   .footer {
     --lockup-h: var(--site-lockup-footer);
-  }
-  .slim {
-    --lockup-h: var(--site-lockup-slim);
   }
   .navy {
     fill: var(--site-navy);

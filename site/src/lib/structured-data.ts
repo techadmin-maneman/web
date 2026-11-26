@@ -4,7 +4,7 @@
 // hours are Customer Care's, every day (docs/decisions/0325-search-pages-and-opening-hours.md).
 
 import type { Guide } from "../content/guides.ts";
-import { business, faq, whatsapp, type FaqItem } from "../content/site.ts";
+import { business, faq, whatsapp } from "../content/site.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { CARE_CLOSES, CARE_OPENS } from "./care-times.ts";
 import { SERVED_CITIES } from "./served-cities.ts";
@@ -93,12 +93,11 @@ export function localBusiness(): object {
   };
 }
 
-/** A page's questions, the home page's by default, each as the page shows it. */
-export function faqPage(items: readonly FaqItem[] = faq.items): object {
+export function faqPage(): object {
   return {
     "@context": CONTEXT,
     "@type": "FAQPage",
-    mainEntity: items.map((item) => ({
+    mainEntity: faq.items.map((item) => ({
       "@type": "Question",
       name: item.q,
       acceptedAnswer: { "@type": "Answer", text: item.a },

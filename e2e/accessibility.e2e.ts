@@ -11,7 +11,8 @@ import { SCROLLED_TO } from "./site-screens.ts";
 
 const PAGES = [
   "/",
-  "/gurgaon",
+  "/areas/gurgaon",
+  "/areas/noida",
   "/try",
   "/try?state=looks",
   "/try?state=gate",

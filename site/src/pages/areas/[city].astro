@@ -1,21 +1,25 @@
 ---
-// A city's page, at /areas/<city>, for each city ops serve (src/lib/served-cities.ts, src/content/guides.ts, cityPage).
-// It is built with
-// its areas hidden: the site's Worker lists those it serves there, from the served pincodes, and shows them; it sends
-// a city served nowhere to /areas, and leaves such cities out of the list of others. Built with the cities' page, so
-// only while that page is shown. A city with words of its own shows them, and its questions, which search engines read
-// too, while they are shown (docs/decisions/0325-search-pages-and-opening-hours.md).
-import Disclosure from "../../components/Disclosure.astro";
-import { buttonLook } from "@maneman/ui/Button";
-import { capsLook } from "@maneman/ui/Caps";
-import LinkRows from "../../components/LinkRows.astro";
-import { areasPage, cityPage, cityWords, guidesPage } from "../../content/guides.ts";
-import { faq, placeholderTag } from "../../content/site.ts";
-import TextPage from "../../layouts/TextPage.astro";
-import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
+// A city's page, at /areas/<city>, for each city ops serve (src/lib/served-cities.ts): where a search for a hair system
+// in that city lands, and the city's paid ads too (docs/decisions/0326-one-page-per-city.md). The home page's own
+// sections, with no price: the hero, which names the city, and the city's own footage where it has some; its clients'
+// films where it has them; the guarantee and the founder's note, with his own fit; the three steps at home; the
+// try-on; the areas we cover there; the home page's questions; and the close. Built with the cities' page, so only
+// while that page is shown. The site's Worker lists the areas served there, and sends a city served nowhere to /areas.
+import CityAreas from "../../components/home/CityAreas.astro";
+import Closing from "../../components/home/Closing.astro";
+import Faq from "../../components/home/Faq.astro";
+import Films from "../../components/home/Films.astro";
+import GuaranteeFounder from "../../components/home/GuaranteeFounder.astro";
+import Hero from "../../components/home/Hero.astro";
+import HowItWorks from "../../components/home/HowItWorks.astro";
+import TryOnTeaser from "../../components/home/TryOnTeaser.astro";
+import { areasPage, cityPage, guidesPage } from "../../content/guides.ts";
+import { cityMedia, founderFilm } from "../../content/site.ts";
+import Site from "../../layouts/Site.astro";
+import { isShown } from "../../lib/build.ts";
 import { citySlug } from "../../lib/cities.ts";
 import { SERVED_CITIES } from "../../lib/served-cities.ts";
-import { breadcrumbs, faqPage } from "../../lib/structured-data.ts";
+import { breadcrumbs, faqPage, localBusiness, organization } from "../../lib/structured-data.ts";
 import { fill } from "../../lib/text.ts";
 
 export function getStaticPaths() {
@@ -29,121 +33,28 @@ interface Props {
 
 const { city } = Astro.props;
 const words = (text: string) => fill(text, { city });
-const others = SERVED_CITIES.filter((other) => other !== city);
+const media = cityMedia[city];
 const trail = [
   { name: guidesPage.home, path: "/" },
   { name: areasPage.title, path: "/areas" },
   { name: words(cityPage.title), path: `/areas/${citySlug(city)}` },
 ];
-const own = cityWords[city];
-const shown = own !== undefined && isShown(own) ? own : null;
+const structuredData = [organization(), localBusiness(), faqPage(), breadcrumbs(trail)];
 ---
 
-<TextPage
-  pageTitle={words(cityPage.pageTitle)}
+<Site
+  title={words(cityPage.pageTitle)}
   description={words(cityPage.description)}
-  title={words(cityPage.title)}
-  lead={words(cityPage.lead)}
-  publish={cityPage.publish}
-  short
-  back={{ href: "/areas", label: areasPage.title }}
-  structuredData={shown === null ? [breadcrumbs(trail)] : [breadcrumbs(trail), faqPage(shown.questions)]}
+  structuredData={structuredData}
+  sections={["faq"]}
+  home
 >
-  {shown !== null && isTaggedPlaceholder(shown) && <div class={capsLook("label tag draft")}>{placeholderTag}</div>}
-  {shown?.sections.map((section) => (
-    <section>
-      <h2>{section.heading}</h2>
-      {section.paragraphs.map((paragraph) => (
-        <p>{paragraph}</p>
-      ))}
-    </section>
-  ))}
-  <section data-city-areas={city} hidden>
-    <h2 class="list-head">{words(cityPage.areas)}</h2>
-    <ul class="areas" data-areas-of={city}></ul>
-  </section>
-  <p class="streets">{cityPage.streets}</p>
-  <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
-    {cityPage.check}
-  </a>
-  {shown !== null && (
-    <section class="questions" aria-labelledby="city-questions" data-section="faq">
-      <h2 id="city-questions" class="list-head">
-        {faq.title}
-      </h2>
-      {shown.questions.map((item, index) => (
-        <Disclosure summary={item.q} look="question" name="city-questions" open={index === 0}>
-          <p class="answer">{item.a}</p>
-        </Disclosure>
-      ))}
-    </section>
-  )}
-  {others.length > 0 && (
-    <nav class="others" aria-labelledby="other-cities">
-      <h2 id="other-cities" class="list-head">
-        {cityPage.others}
-      </h2>
-      <LinkRows
-        rows={others.map((other) => ({
-          href: `/areas/${citySlug(other)}`,
-          title: fill(cityPage.title, { city: other }),
-          city: other,
-        }))}
-      />
-    </nav>
-  )}
-</TextPage>
-
-<style>
-  /* The areas the Worker lists, between hairlines: two to a row on a phone, three on a laptop. */
-  .areas {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--sp-24);
-    margin: var(--sp-8) 0 0;
-    padding: 0;
-    list-style: none;
-    font-size: var(--fs-16);
-  }
-  .areas :global(li) {
-    padding: var(--site-gap-page-lede) 0;
-    border-bottom: var(--hairline) solid var(--site-line);
-  }
-  .streets {
-    margin: var(--site-gap-near) 0 0;
-  }
-  .book {
-    margin-top: var(--sp-24);
-  }
-  .others,
-  .questions {
-    margin-top: var(--sp-40);
-  }
-  .questions .list-head {
-    margin-top: 0;
-  }
-  /* The city's own words, a draft until published: tagged on staging, as an unpublished page is. */
-  .draft {
-    display: inline-block;
-    margin-top: var(--sp-24);
-  }
-  /* As the home page's answers: muted, and clear of the sign beside the question. */
-  .answer {
-    margin: 0;
-    padding: 0 var(--site-space-28-60) var(--site-gap-block) 0;
-    font-size: var(--site-fs-body);
-    line-height: var(--lh-155);
-    color: var(--site-text-muted);
-  }
-  .others .list-head {
-    margin-top: 0;
-  }
-  @media (min-width: 761px) {
-    .areas {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .book {
-      width: fit-content;
-    }
-  }
-</style>
+  <Hero footage={media?.hero} area={words(cityPage.area)} />
+  {media !== undefined && <Films films={media.films} />}
+  <GuaranteeFounder film={isShown(founderFilm) ? founderFilm : undefined} />
+  <HowItWorks />
+  <TryOnTeaser />
+  <CityAreas city={city} />
+  <Faq />
+  <Closing />
+</Site>

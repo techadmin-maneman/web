@@ -1,6 +1,7 @@
 # 0325. Search pages and the business's opening hours
 
-- Status: accepted
+- Status: accepted. Amended by [ADR 0326](0326-one-page-per-city.md): a city's page is the home page's sections,
+  with the areas we cover there and the home page's questions; Gurgaon's own words and questions are dropped.
 - Date: 2026-11-25
 - Topic: The site
 

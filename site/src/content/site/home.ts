@@ -41,6 +41,8 @@ export const footer = {
         { label: "Questions", href: "/#faq" },
       ],
     },
+    /** Each city ops serve, at its own page, and the list of them all (site/src/lib/served-cities.ts). */
+    areas: { title: "Areas", all: "All areas" },
     /** The guides, once they are published (site/src/lib/more-pages.ts). */
     more: { title: "Learn" },
     reach: { title: "Reach us" },
@@ -54,12 +56,7 @@ export const footer = {
       ],
     },
   },
-  /** The slim footer on every other page: where to go from there, before the notices. */
   pagesLabel: "Pages",
-  pages: [
-    { label: "Home", href: "/" },
-    { label: "Try-on", href: "/try" },
-  ],
   area: `${serviceArea} · home service only`,
   entity: "Mane Man Private Limited",
   /** Before the company's name, with the year the page was built. */
@@ -259,12 +256,6 @@ export const guarantee = {
   label: "The guarantee",
   text: GUARANTEE,
 };
-
-/** A question and its answer, as a page shows it and search engines read it. */
-export interface FaqItem {
-  readonly q: string;
-  readonly a: string;
-}
 
 export const faq = {
   title: "Questions",

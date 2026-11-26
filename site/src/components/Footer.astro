@@ -1,14 +1,17 @@
 ---
-// The footer, on the home page only, navy under a navy-700 rule (ADR 0263): the lockup, its line and the number on the
-// left, the links in two columns beside them; then the company, its notices and the area. It has no Book: the
-// closing band above it is the last call.
+// The footer, on every page but the flows (/book, the referral landing, /try), which end in themselves (ADR 0326): the
+// lockup, its line and the number, the links in columns, each city served among them; then the company, its notices
+// and the area. It has no Book: a page's own call to book is above it.
 import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
+import { areasPage, cityPage } from "../content/guides.ts";
 import { business, consentBar, footer, whatsapp } from "../content/site.ts";
 import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import { isShown } from "../lib/build.ts";
+import { citySlug } from "../lib/cities.ts";
 import { MORE_PAGES } from "../lib/more-pages.ts";
 import { sectionHref } from "../lib/page-path.ts";
+import { SERVED_CITIES } from "../lib/served-cities.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import Icon from "./Icon.astro";
 import Lockup from "./Lockup.astro";
@@ -17,16 +20,20 @@ import Social from "./Social.astro";
 interface Props {
   /** The home page's sections this page has of its own (../layouts/Site.astro). */
   sections?: readonly string[];
+  /** The page has the sticky bar at a phone's foot, which the footer keeps room for, and a band just above it. */
+  bar?: boolean;
 }
 
-const { sections = [] } = Astro.props;
-const { service, more, reach, legal } = footer.columns;
+const { sections = [], bar = false } = Astro.props;
+const { service, areas, more, reach, legal } = footer.columns;
+// Only where the cities' pages are built (../pages/areas/[city].astro).
+const showAreas = isShown(areasPage) && isShown(cityPage) && SERVED_CITIES.length > 0;
 // The number is given as WhatsApp alone: the footer offers no line to call.
 const showWhatsapp = isShown(whatsapp);
 const year = new Date().getFullYear();
 ---
 
-<footer class="footer">
+<footer class:list={["footer", { "with-bar": bar }]}>
   <div class="inner">
     <div class="top">
       <div class="brand">
@@ -60,6 +67,26 @@ const year = new Date().getFullYear();
             </a>
           ))}
         </div>
+        {showAreas && (
+          <div class="column">
+            <span class={capsLook("title")}>{areas.title}</span>
+            {/* The cities served as this page was built. On the home page, /areas and a city's page the Worker also
+                leaves out one no longer served (site/src/worker.ts); elsewhere its link leads to /areas until the next
+                build. */}
+            {SERVED_CITIES.map((city) => (
+              <a
+                class={textLinkLook({ tone: "ink", quiet: true, className: "item" })}
+                href={`/areas/${citySlug(city)}`}
+                data-city={city}
+              >
+                {city}
+              </a>
+            ))}
+            <a class={textLinkLook({ tone: "ink", quiet: true, className: "item" })} href="/areas">
+              {areas.all}
+            </a>
+          </div>
+        )}
         {MORE_PAGES.length > 0 && (
           <div class="column">
             <span class={capsLook("title")}>{more.title}</span>
@@ -97,15 +124,24 @@ const year = new Date().getFullYear();
 </footer>
 
 <style>
+  /* Below a page's words, a gap first; below a band, none. */
   .footer {
+    margin-top: var(--site-foot-gap);
     background: var(--site-navy);
     border-top: var(--hairline) solid var(--site-navy-rule);
     color: var(--site-on-navy);
   }
+  .with-bar {
+    margin-top: 0;
+  }
   .inner {
     max-width: var(--page-max);
     margin: 0 auto;
-    padding: var(--sp-40) var(--gutter) calc(var(--bar-h) + var(--sp-40) + var(--consent-reserve));
+    padding: var(--sp-40) var(--gutter) calc(var(--sp-40) + var(--consent-reserve));
+  }
+  /* Room for the sticky bar at a phone's foot, so it never covers the last line. */
+  .with-bar .inner {
+    padding-bottom: calc(var(--bar-h) + var(--sp-40) + var(--consent-reserve));
   }
   .top {
     display: grid;
@@ -148,6 +184,7 @@ const year = new Date().getFullYear();
   .item {
     font-size: var(--fs-16);
     color: var(--site-on-navy);
+    overflow-wrap: anywhere;
   }
   /* WhatsApp's mark beside the number, as the sticky bar draws it. */
   .number {
@@ -184,11 +221,11 @@ const year = new Date().getFullYear();
   }
 
   @media (min-width: 761px) {
-    .inner {
+    .inner,
+    .with-bar .inner {
       padding: var(--sp-64) var(--gutter) calc(var(--sp-48) + var(--consent-reserve));
     }
     .top {
-      grid-template-columns: minmax(0, 2fr) minmax(0, 2fr);
       gap: var(--sp-40);
     }
     .tagline {
@@ -200,7 +237,11 @@ const year = new Date().getFullYear();
     .reach {
       margin-top: var(--sp-32);
     }
+    /* One column for each list, side by side. */
     .columns {
+      grid-template-columns: none;
+      grid-auto-columns: minmax(0, 1fr);
+      grid-auto-flow: column;
       gap: var(--sp-40);
     }
     .bottom {
@@ -212,6 +253,12 @@ const year = new Date().getFullYear();
       flex-basis: auto;
       margin-left: auto;
       padding-top: 0;
+    }
+  }
+  /* The brand and the lists side by side from a laptop's width; below it, the lists have the whole row. */
+  @media (min-width: 1024px) {
+    .top {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 2fr);
     }
   }
 </style>

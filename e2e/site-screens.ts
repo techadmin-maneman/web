@@ -4,11 +4,12 @@
 import * as siteCopy from "../site/src/content/site.ts";
 
 /** The pages whose islands wait to be scrolled to, the try-on teaser's slider among them: opened, never visited. */
-export const SCROLLED_TO = ["/", "/gurgaon"];
+export const SCROLLED_TO = ["/", "/areas/gurgaon", "/areas/noida"];
 
 export const PAGES = [
   "/",
-  "/gurgaon",
+  "/areas/gurgaon",
+  "/areas/noida",
   "/try",
   "/book",
   "/privacy",
@@ -34,7 +35,6 @@ export const PAGES = [
 export const SCREENS = [
   ...PAGES,
   "/stop#a-token",
-  "/areas/gurgaon",
   "/book?state=served",
   "/book?state=unserved",
   "/book?state=booked",

@@ -1,4 +1,4 @@
-// The guides, once their wording is published, which both footers link. The cities' pages stay up but unlinked.
+// The guides, once their wording is published, which the footer links beside the cities (../components/Footer.astro).
 
 import { guides, guidesPage } from "../content/guides.ts";
 import { isShown } from "./build.ts";

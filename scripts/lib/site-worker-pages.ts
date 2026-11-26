@@ -9,7 +9,7 @@ export const SITE_WORKER_PAGES = [
   "/areas/*",
   "/book",
   "/guides/*",
-  // The page paid ads in Gurgaon land on (docs/decisions/0321-the-gurgaon-page.md).
+  // Where Gurgaon's paid ads first landed, sent on to the city's page (docs/decisions/0326-one-page-per-city.md).
   "/gurgaon",
   "/privacy",
   "/notices",

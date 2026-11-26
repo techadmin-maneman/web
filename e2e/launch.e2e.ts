@@ -95,7 +95,8 @@ test("the sitemap lists the pages, a folder down too, and robots.txt keeps this 
   ]) {
     expect(sitemap).toContain(`<loc>https://maneman.in${path}</loc>`);
   }
-  for (const path of ["/r", "/stop", "/404"]) expect(sitemap).not.toContain(`<loc>https://maneman.in${path}</loc>`);
+  for (const path of ["/r", "/stop", "/404", "/gurgaon"])
+    expect(sitemap).not.toContain(`<loc>https://maneman.in${path}</loc>`);
   expect(await (await request.get("/robots.txt")).text()).toBe("User-agent: *\nDisallow: /\n");
 });
 

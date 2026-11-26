@@ -1,6 +1,7 @@
 # 0321. The Gurgaon page paid ads land on
 
-- Status: accepted
+- Status: accepted. Amended by [ADR 0326](0326-one-page-per-city.md): this page is Gurgaon's city page, at
+  `/areas/gurgaon`, and `/gurgaon` sends its visitor there.
 - Date: 2026-11-25
 - Topic: The site
 
