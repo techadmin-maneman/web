@@ -11,20 +11,14 @@ import Icon from "./Icon.astro";
   <ul class="social">
     {socialLinks.links.map((link) => (
       <li>
-        {link.href === null ? (
-          <span class="icon" title={link.label}>
-            <Icon name={link.icon} size="lg" />
-          </span>
-        ) : (
-          <a
-            class={textLinkLook({ tone: "ink", quiet: true, className: "icon" })}
-            href={link.href}
-            aria-label={link.label}
-            rel="noopener"
-          >
-            <Icon name={link.icon} size="lg" />
-          </a>
-        )}
+        <a
+          class={textLinkLook({ tone: "ink", quiet: true, className: "icon" })}
+          href={link.href}
+          aria-label={link.label}
+          rel="noopener"
+        >
+          <Icon name={link.icon} size="lg" />
+        </a>
       </li>
     ))}
   </ul>
@@ -34,10 +28,16 @@ import Icon from "./Icon.astro";
   .social {
     display: flex;
     gap: var(--sp-8);
-    /* The last icon's edge, not its tap's, meets the line's end. */
-    margin: 0 calc(-1 * var(--sp-8)) 0 0;
+    /* The last icon's edge, not its tap's, meets the line's end; on a phone, where the row starts its own line, the
+       first icon's meets the column's. */
+    margin: 0 calc(-1 * var(--sp-8)) 0 calc((var(--sp-24) - var(--tap)) / 2);
     padding: 0;
     list-style: none;
+  }
+  @media (min-width: 761px) {
+    .social {
+      margin-left: 0;
+    }
   }
   .icon {
     display: inline-flex;
@@ -47,7 +47,7 @@ import Icon from "./Icon.astro";
     height: var(--tap);
     color: var(--ink-muted);
   }
-  a.icon:hover {
+  .icon:hover {
     color: var(--site-on-navy);
   }
 </style>

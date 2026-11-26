@@ -19,7 +19,7 @@ export const socialLinks = {
   links: [
     { icon: "linkedin", label: "Mane Man on LinkedIn", href: "https://www.linkedin.com/company/mane-man/" },
     { icon: "instagram", label: "Mane Man on Instagram", href: "https://www.instagram.com/maneman.official" },
-  ] satisfies { icon: "linkedin" | "instagram"; label: string; href: string | null }[],
+  ] satisfies { icon: "linkedin" | "instagram"; label: string; href: string }[],
 };
 
 /**

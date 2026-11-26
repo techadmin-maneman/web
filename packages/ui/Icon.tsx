@@ -1,4 +1,11 @@
-import { ICON_SIZES, ICON_STROKES, isBrandMark, type IconSize, type IconWeight } from "@maneman/brand/icons";
+import {
+  BRAND_MARK_INSET,
+  ICON_SIZES,
+  ICON_STROKES,
+  isBrandMark,
+  type IconSize,
+  type IconWeight,
+} from "@maneman/brand/icons";
 
 /**
  * A line icon in a 24 px box, drawn in the surrounding text colour, at one of the set's sizes. The technician app
@@ -31,7 +38,7 @@ export function Icon({
       aria-hidden="true"
       focusable="false"
     >
-      <path d={d} />
+      <path d={d} transform={mark ? BRAND_MARK_INSET : undefined} />
     </svg>
   );
 }
