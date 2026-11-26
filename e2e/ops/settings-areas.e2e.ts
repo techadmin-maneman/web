@@ -427,6 +427,40 @@ test.describe("the service area", () => {
     await expect(row(page, "400050")).toContainText("Bandra West");
   });
 
+  // Ten districts were the most at a time, so Delhi's eleven took two looks.
+  test("shows the pincodes of a state's districts at once, and leaves nothing to tick where all are held", async ({
+    page,
+  }) => {
+    const directory = opsCopy.areas.directory;
+    const districts = Array.from({ length: 11 }, (_, at) => `DISTRICT ${String(at + 1)}`);
+    const fort = {
+      pincode: "400001",
+      district: "DISTRICT 1",
+      area: "Fort",
+      offices: ["Fort SO"],
+      latitude: null,
+      longitude: null,
+      held: { city: "Mumbai", area: "Fort", served: false },
+    };
+    await open(page, "/settings/areas", {
+      "GET /api/pincode-directory/states": json({ states: ["MAHARASHTRA"] }),
+      "GET /api/pincode-directory/districts": json({
+        districts: districts.map((district) => ({ state: "MAHARASHTRA", district, pincodes: 1, held: 1 })),
+      }),
+      "GET /api/pincode-directory/pincodes": json({ pincodes: [fort] }),
+    });
+    const form = page.getByRole("group", { name: directory.title });
+    await form.getByLabel(directory.state).selectOption("MAHARASHTRA");
+    for (const at of districts.keys()) {
+      await form.getByLabel(directory.district(`District ${String(at + 1)}`, 1, 1)).check();
+    }
+    const asked = page.waitForRequest((request) => request.url().includes("/api/pincode-directory/pincodes"));
+    await form.getByRole("button", { name: directory.show }).click();
+    expect(new URL((await asked).url()).searchParams.getAll("district")).toEqual(districts);
+    await expect(form.getByLabel(directory.all)).toBeDisabled();
+    await expect(form.getByLabel(directory.tick("400001", "Fort"))).toBeDisabled();
+  });
+
   test("adds a file's new pincodes first, naming any India Post does not list, then shows its changes", async ({
     page,
   }) => {

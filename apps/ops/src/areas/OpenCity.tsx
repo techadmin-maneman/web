@@ -125,6 +125,7 @@ function PincodeTicks(props: {
           <th scope="col">
             <Checkbox
               aria-label={copy.all}
+              disabled={free.length === 0}
               checked={free.length > 0 && free.every((each) => ticked.has(each))}
               onChange={(event) => {
                 onTicked(toggled(ticked, free, event.target.checked));
@@ -238,7 +239,7 @@ export function OpenCity(props: { cities: readonly string[]; onAdded: (added: re
   return (
     <AreaSection id="area-open-city" title={copy.title}>
       <ChooseDistricts onShown={shown} />
-      {pincodes !== null && <PincodeTicks pincodes={pincodes} ticked={ticked} onTicked={setTicked} />}
+      {/* The city and Add stand above the list, which may run to a state's pincodes. */}
       {pincodes !== null && (
         <Field label={copy.city} className={shared.field}>
           {(control) => (
@@ -274,6 +275,7 @@ export function OpenCity(props: { cities: readonly string[]; onAdded: (added: re
       )}
       {said !== null && <Toast>{said}</Toast>}
       {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
+      {pincodes !== null && <PincodeTicks pincodes={pincodes} ticked={ticked} onTicked={setTicked} />}
     </AreaSection>
   );
 }
