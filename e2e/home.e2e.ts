@@ -172,29 +172,32 @@ test.describe("sticky bar and footer: the home page only", () => {
     await expect(page.locator('footer a[href="/book"]')).toHaveCount(0);
   });
 
-  // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms. The flows, /book and
-  // /try, have no foot at all (the flow's bar, above).
-  for (const path of ["/privacy"]) {
-    test(`are absent from ${path}, which keeps the slim foot`, async ({ page }) => {
+  // Elsewhere the foot is the same, without the sticky bar: away from the home page a phone once had nothing to lead
+  // anywhere but home and /book (docs/decisions/0326-one-page-per-city.md). The flows, /book and /try, have no foot
+  // at all (the flow's bar, above).
+  for (const path of ["/privacy", "/guides"]) {
+    test(`are the full foot on ${path}, with no sticky bar`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator("footer")).toBeVisible();
       await expect(page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel })).toHaveCount(0);
       await expect(page.locator("footer")).toHaveCount(1);
-      await expect(page.locator("footer")).not.toContainText(siteCopy.footer.area);
+      await expect(page.locator("footer")).toContainText(siteCopy.footer.area);
       await expect(page.locator("footer")).toContainText(siteCopy.footer.entity);
       await expect(page.locator('footer a[href="/terms"]')).toHaveCount(1);
     });
   }
 
-  // On a phone the header's links hide, and away from the home page nothing led anywhere but the home page and /book.
-  test("the slim foot leads to the other pages, from a phone too", async ({ page }) => {
+  test("the foot leads to the other pages and to each city's, from a phone too", async ({ page }) => {
     await page.goto("/privacy");
     const pages = page.getByRole("navigation", { name: siteCopy.footer.pagesLabel });
-    for (const link of siteCopy.footer.pages) {
+    const { service, areas } = siteCopy.footer.columns;
+    for (const link of service.links) {
       await expect(pages.getByRole("link", { name: link.label, exact: true })).toHaveAttribute("href", link.href);
     }
-    await pages.getByRole("link", { name: siteCopy.tryOnTeaser.eyebrow, exact: true }).click();
-    await expect(page).toHaveURL(/\/try$/);
+    await expect(pages.getByRole("link", { name: "Gurgaon", exact: true })).toHaveAttribute("href", "/areas/gurgaon");
+    await expect(pages.getByRole("link", { name: areas.all, exact: true })).toHaveAttribute("href", "/areas");
+    await pages.getByRole("link", { name: areas.all, exact: true }).click();
+    await expect(page).toHaveURL(/\/areas$/);
   });
 });
 
@@ -806,7 +809,7 @@ test.describe("other pages", () => {
 
     await visit(page, "/stop");
     await expect(page.getByRole("heading", { name: siteCopy.stopMessages.expired.title })).toBeVisible();
-    await expect(page.getByRole("link", { name: siteCopy.whatsapp.display })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: siteCopy.whatsapp.display, exact: true })).toHaveAttribute(
       "href",
       "https://wa.me/919034572990",
     );

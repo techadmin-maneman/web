@@ -1,5 +1,5 @@
 // Pictures and the people the home page shows: the film, the results, the stages, the steps, the founder's words; and
-// the Gurgaon page's own films.
+// each city's own films, on its page.
 
 export interface Picture {
   readonly file: string;
@@ -34,7 +34,7 @@ export const heroFootage = {
 } satisfies HeroFootage;
 
 /**
- * The Gurgaon page's hero (docs/decisions/0321-the-gurgaon-page.md): clients and the founder before and after, from
+ * Gurgaon's page's hero (docs/decisions/0321-the-gurgaon-page.md): clients and the founder before and after, from
  * the launch films, each poster the frame its cut opens on. The wide film is the upright one on its own blurred
  * ground, its edges feathered; the phone's is 406 x 720, without sound, under 800 KB, as the home page's is:
  * ffmpeg -i MM_Hero_Loop_9x16.mp4 -filter_complex "[0:v]split=2[a][b];[a]scale=1280:-2,crop=1280:720,boxblur=40:3[bg];
@@ -62,7 +62,15 @@ export interface Film {
   readonly play: string;
 }
 
-/** Nitin's fit at home, on the Gurgaon page: before and after, then in his own words. */
+/** A city's own clients' films, on its page, under a heading of their own. */
+export interface CityFilms {
+  readonly publish: boolean;
+  readonly eyebrow: string;
+  readonly title: string;
+  readonly films: readonly Film[];
+}
+
+/** Nitin's fit at home, on Gurgaon's page: before and after, then in his own words. */
 export const gurgaonFilms = {
   publish: true,
   eyebrow: "Nitin’s fit",
@@ -81,9 +89,17 @@ export const gurgaonFilms = {
       play: "Play Nitin’s story",
     },
   ] satisfies Film[],
+} satisfies CityFilms;
+
+/**
+ * A city's own material, on its page (docs/decisions/0326-one-page-per-city.md): its clients' footage for the hero,
+ * and their films. A city with none has the home page's hero and no films section.
+ */
+export const cityMedia: Readonly<Partial<Record<string, { readonly hero: HeroFootage; readonly films: CityFilms }>>> = {
+  Gurgaon: { hero: gurgaonHeroFootage, films: gurgaonFilms },
 };
 
-/** The founder's own fit, step by step, beside his note on the Gurgaon page. */
+/** The founder's own fit, step by step, beside his note on each city's page. */
 export const founderFilm = {
   publish: true,
   video: "gurgaon-founder-film.mp4",

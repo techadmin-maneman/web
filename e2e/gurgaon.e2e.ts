@@ -1,6 +1,6 @@
-// The Gurgaon page's films (docs/decisions/0321-the-gurgaon-page.md): its own clients' footage in the hero, and films
-// that fetch nothing until they are tapped, then play in their poster's place and take focus. The home page keeps its
-// own hero and has no founder's film.
+// Gurgaon's page and its films (docs/decisions/0321-the-gurgaon-page.md, docs/decisions/0326-one-page-per-city.md): its
+// own clients' footage in the hero, and films that fetch nothing until they are tapped, then play in their poster's
+// place and take focus. The home page keeps its own hero and has no founder's film.
 import { expect, test } from "./support.ts";
 import { founderFilm, founderNote, gurgaonFilms } from "../site/src/content/site.ts";
 
@@ -9,7 +9,7 @@ test("leads with its own clients' footage, and fetches a film only once it is ta
   page.on("request", (request) => {
     if (request.url().endsWith(".mp4")) fetched.push(request.url());
   });
-  await page.goto("/gurgaon");
+  await page.goto("/areas/gurgaon");
   await expect(page.locator("[data-hero-video]")).toHaveAttribute("data-phone-film", /gurgaon-hero-phone/);
   const story = gurgaonFilms.films[1];
   if (story === undefined) throw new Error("the Gurgaon page has a second film");
@@ -39,7 +39,7 @@ test("leads with its own clients' footage, and fetches a film only once it is ta
 // the note keeps its place as it unfolds.
 test("stands the founder's film beside the guarantee and the note, which unfolds in place", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/gurgaon");
+  await page.goto("/areas/gurgaon");
   const band = page.locator('[data-section="guarantee"]');
   const guarantee = band.locator(".guarantee-part");
   const note = band.locator('[data-section="founder"]');

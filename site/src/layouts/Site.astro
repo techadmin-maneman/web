@@ -1,11 +1,10 @@
 ---
-// Every page's frame: the head, a link past the header, the fixed header, and the footer: the full one and the sticky
-// bottom bar on the home page, the slim one on every other. The head carries
+// Every page's frame: the head, a link past the header, the fixed header, and the footer, on every page but the flows
+// (ADR 0265), with the sticky bottom bar on the home page and each city's. The head carries
 // what search engines and shared links read: the canonical address on
 // production's host, Open Graph and X cards, and any structured data.
 import "../styles/global.css";
 import Footer from "../components/Footer.astro";
-import SlimFooter from "../components/SlimFooter.astro";
 import ConsentBar from "../components/ConsentBar.astro";
 import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import Header from "../components/Header.astro";
@@ -26,7 +25,7 @@ import plex600 from "../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-p
 interface Props {
   title: string;
   description?: string;
-  /** The home page carries the footer and the sticky bar. */
+  /** The home page, and each city's, carries the sticky bar. */
   home?: boolean;
   /** The home page's sections a page has of its own, which the header's and footer's links then stay on. */
   sections?: readonly string[];
@@ -114,7 +113,7 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     <main id="content" tabindex="-1">
       <slot />
     </main>
-    {home ? <Footer sections={sections} /> : !isFlowPage(path) && <SlimFooter />}
+    {!isFlowPage(path) && <Footer sections={sections} bar={home} />}
     {CONSENT_BAR_SHOWN && <ConsentBar />}
     {home && <StickyBar />}
     <script>

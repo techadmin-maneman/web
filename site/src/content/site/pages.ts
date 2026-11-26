@@ -89,8 +89,6 @@ export const stopMessages = {
 
 export const pageTitles = {
   home: `Mane Man — hair systems, fitted at your home across ${serviceArea}`,
-  /** The page paid ads land on (docs/decisions/0321-the-gurgaon-page.md). */
-  gurgaon: "Hair systems fitted at home in Gurgaon — Mane Man",
   tryOn: "Try a new look — Mane Man",
   book: "Book a free consultation — Mane Man",
   privacy: "Privacy — Mane Man",
@@ -107,7 +105,6 @@ export const pageTitles = {
 /** Each page's description, for search results and shared links. */
 export const pageDescriptions = {
   home: `Hair systems in 100% real human hair, fitted at your home across ${serviceArea}. The consultation is free.`,
-  gurgaon: "Hair systems in 100% real human hair, fitted at your home in Gurgaon. The consultation is free.",
   tryOn: tryOnTeaser.body,
   book: booking.intro.join(" "),
   privacy: "What Mane Man keeps about you, who processes it, how long it is kept, and how to have it erased.",

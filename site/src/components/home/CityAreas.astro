@@ -1,0 +1,61 @@
+---
+// The areas we cover in a city, on its page, on white before the questions (docs/decisions/0326-one-page-per-city.md).
+// Built hidden and empty: the site's Worker lists the areas from the pincodes ops serve there, and shows the band, at
+// each request; a city with none listed keeps it hidden. Two to a row on a phone, four on a laptop, between hairlines;
+// then the pincode check, the band's one filled button.
+import { buttonLook } from "@maneman/ui/Button";
+import { cityPage } from "../../content/guides.ts";
+import { fill } from "../../lib/text.ts";
+
+interface Props {
+  city: string;
+}
+
+const { city } = Astro.props;
+---
+
+<section class="band ground-white" data-section="areas" data-city-areas={city} hidden aria-labelledby="areas-title">
+  <div class="container">
+    <h2 class="section-title" id="areas-title">
+      {fill(cityPage.areas, { city })}
+    </h2>
+    <ul class="areas" data-areas-of={city}></ul>
+    <p class="streets">{cityPage.streets}</p>
+    <a class={buttonLook({ variant: "primary", size: "action", className: "check" })} href="/book" data-filled>
+      {cityPage.check}
+    </a>
+  </div>
+</section>
+
+<style>
+  .areas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--sp-24);
+    margin: var(--site-gap-block) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-16);
+  }
+  .areas :global(li) {
+    padding: var(--site-gap-page-lede) 0;
+    border-bottom: var(--hairline) solid var(--site-line);
+  }
+  .streets {
+    margin: var(--site-gap-near) 0 0;
+    max-width: var(--measure-short);
+  }
+  .check {
+    margin-top: var(--sp-24);
+  }
+  @media (min-width: 761px) {
+    .areas {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      column-gap: var(--sp-40);
+    }
+    /* On a laptop the button is its words' width, as the try-on's is. */
+    .check {
+      width: fit-content;
+    }
+  }
+</style>

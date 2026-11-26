@@ -7,7 +7,7 @@ import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { describe, expect, it } from "vitest";
 import { booking as appBooking, change as appChange } from "../../../apps/app/src/content.ts";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../../site/src/content/design-placeholders.ts";
-import { cityWords, guides } from "../../../site/src/content/guides.ts";
+import { guides } from "../../../site/src/content/guides.ts";
 import { referral } from "../../../site/src/content/referral.ts";
 import * as site from "../../../site/src/content/site.ts";
 import { siteEnvironment } from "../../../site/src/lib/environment.ts";
@@ -71,15 +71,6 @@ function assetPath(file: string): string | null {
 }
 
 describe("content", () => {
-  // The Words page publishes a line onto the object its key reaches: one object behind two pages' keys would let a
-  // draft's edit change a published page (docs/decisions/0325-search-pages-and-opening-hours.md).
-  it("gives Gurgaon's page the home page's answer to whether anyone can tell, as a line of its own", () => {
-    const home = site.faq.items[0];
-    const gurgaon = cityWords.Gurgaon?.questions.find((item) => item.q === home?.q);
-    expect(gurgaon).toEqual({ q: home?.q, a: home?.a });
-    expect(gurgaon).not.toBe(home);
-  });
-
   it("refers only to images and footage that exist in site/src/assets or design/assets", () => {
     const files = filesIn(site);
     expect(files.length).toBeGreaterThan(20);
@@ -87,8 +78,9 @@ describe("content", () => {
   });
 
   // Every phone downloaded the 2.3 MB film.
-  it("gives phones a film under 800 KB, on the home page and the Gurgaon page", () => {
-    for (const footage of [site.heroFootage, site.gurgaonHeroFootage]) {
+  it("gives phones a film under 800 KB, on the home page and each city's", () => {
+    const cities = Object.values(site.cityMedia).flatMap((media) => (media === undefined ? [] : [media.hero]));
+    for (const footage of [site.heroFootage, ...cities]) {
       const path = assetPath(footage.phoneVideo);
       expect(path).not.toBeNull();
       expect(statSync(path ?? "").size).toBeLessThan(800 * 1024);

@@ -16,9 +16,10 @@
 // The built films are given a byte range at a time, which the assets cannot do: iOS Safari plays a video only from a
 // server that can.
 //
-// The home page, the Gurgaon page and /areas name the cities ops serve (GET /api/served-cities), kept a minute as the reward is, so a
-// launch reaches the site without a rebuild; each sentence that names them is built naming none. A city's page,
-// /areas/<city>, lists the areas served there, which it is built without.
+// The home page, /areas and each city's page name the cities ops serve (GET /api/served-cities), kept a minute as the
+// reward is, so a launch reaches the site without a rebuild; each sentence that names them is built naming none. A
+// city's page, /areas/<city>, lists the areas served there, which it is built without. /gurgaon, where Gurgaon's paid
+// ads first landed, is Gurgaon's page now (docs/decisions/0326-one-page-per-city.md).
 //
 // Every page goes through the Worker, which gives its content security policy a nonce of the request's own. Cloudflare
 // reads it from the policy and puts it on any script it adds to the page at its edge, so one switched back on for the
@@ -52,7 +53,10 @@ const NO_CODE = /^\/r\/?$/;
 const FILM = /^\/_astro\/[^/]+\.mp4$/;
 
 /** The pages that name the cities we come to. */
-const CITY_PAGES = new Set(["/", "/gurgaon", "/areas"]);
+const CITY_PAGES = new Set(["/", "/areas"]);
+
+/** Where Gurgaon's paid ads first landed, and the city's page it leads to, with the ad's tags. */
+const GURGAON = { from: "/gurgaon", to: "/areas/gurgaon" } as const;
 
 /** A city's own page. */
 const CITY_PAGE = /^\/areas\/[a-z0-9-]+$/;
@@ -449,6 +453,7 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
     const url = new URL(request.url);
     if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
     if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
+    if (url.pathname === GURGAON.from) return Response.redirect(`${url.origin}${GURGAON.to}${url.search}`, 301);
     const token = PAY_LINK.exec(url.pathname)?.[1];
     if (token !== undefined) return payLink(env, request, url.origin, token);
     const link = CAMPAIGN_LINK.exec(url.pathname);

@@ -1,6 +1,6 @@
 // The cities the site says it comes to: mm-api answers those with a pincode ops serve (src/routes/public/served-cities.ts),
-// and the mm-site Worker writes them into each sentence on / and /areas that names them, over the one the page was
-// built with, which names none; while mm-api cannot say, the page is served as built.
+// and the mm-site Worker writes them into each sentence on /, /areas and a city's page that names them, over the one
+// the page was built with, which names none; while mm-api cannot say, the page is served as built.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSiteWorker } from "../../../site/src/worker.ts";
@@ -52,7 +52,7 @@ describe("the site Worker on a page that names the cities", () => {
     return { html: await response.text(), asked };
   }
 
-  it.each(["/", "/gurgaon", "/areas"])("writes in the cities served on %s", async (path) => {
+  it.each(["/", "/areas", "/areas/gurgaon"])("writes in the cities served on %s", async (path) => {
     const page = await visit(path, () => Response.json({ cities: ["Gurgaon", "Mumbai"] }));
     expect(named(page.html)).toBe("Your technician comes to your home in Gurgaon and Mumbai.");
     expect(page.html).toContain("<p>Nothing to name</p>");
@@ -116,6 +116,18 @@ describe("the site Worker on a city's page", () => {
     const response = await opened(() => Response.json({ cities: ["Noida"], areas: { Noida: ["Sector 18"] } }));
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("https://maneman.in/areas");
+  });
+
+  // Gurgaon's paid ads first landed on /gurgaon, a page of its own beside the city's (ADR 0326).
+  it("sends /gurgaon to Gurgaon's page for good, with the ad's tags", async () => {
+    const { env, asked } = siteEnv(() => Response.json({ cities: ["Gurgaon"] }), PAGE);
+    const response = await createSiteWorker().fetch(
+      new Request("https://maneman.in/gurgaon?utm_source=google&gclid=abc"),
+      env,
+    );
+    expect(response.status).toBe(301);
+    expect(response.headers.get("Location")).toBe("https://maneman.in/areas/gurgaon?utm_source=google&gclid=abc");
+    expect(asked).toEqual([]);
   });
 
   it("keeps the areas hidden while mm-api cannot say", async () => {

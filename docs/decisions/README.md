@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0326. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0327. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -301,6 +301,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0285](0285-every-site-booking-is-a-sign-in.md) Every booking on the site asks the WhatsApp code, and signs the client in
 - [0321](0321-the-gurgaon-page.md) The Gurgaon page paid ads land on
 - [0325](0325-search-pages-and-opening-hours.md) Search pages and the business's opening hours
+- [0326](0326-one-page-per-city.md) One page per city, and one footer
 
 ### The ops console
 
@@ -681,8 +682,9 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0318](0318-care-team-beside-messages.md) | Care team beside Messages | 2026-11-25 | accepted |  |
 | [0319](0319-rules-that-hold-together.md) | Rules that hold together | 2026-11-25 | accepted |  |
 | [0320](0320-lead-stages.md) | A lead's stages, and a lead lost | 2026-11-25 | accepted |  |
-| [0321](0321-the-gurgaon-page.md) | The Gurgaon page paid ads land on | 2026-11-25 | accepted |  |
+| [0321](0321-the-gurgaon-page.md) | The Gurgaon page paid ads land on | 2026-11-25 | accepted | [0326](0326-one-page-per-city.md) |
 | [0322](0322-care-times.md) | Customer Care's times, to the minute | 2026-11-25 | accepted |  |
 | [0323](0323-the-unanswered-lead-alert.md) | The unanswered-lead alert | 2026-11-25 | accepted |  |
 | [0324](0324-the-weekly-dashboard.md) | The weekly dashboard | 2026-11-25 | accepted |  |
-| [0325](0325-search-pages-and-opening-hours.md) | Search pages and the business's opening hours | 2026-11-25 | accepted |  |
+| [0325](0325-search-pages-and-opening-hours.md) | Search pages and the business's opening hours | 2026-11-25 | accepted | [0326](0326-one-page-per-city.md) |
+| [0326](0326-one-page-per-city.md) | One page per city, and one footer | 2026-11-26 | accepted |  |

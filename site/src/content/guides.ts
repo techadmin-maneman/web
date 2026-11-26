@@ -5,7 +5,6 @@
 // No price is written here: a guide says what a price depends on, and that it is quoted at the free consultation
 // (docs/decisions/0073-prices-from-the-price-book.md). The publish gate reads these pages for typed prices too.
 
-import { faq, type FaqItem } from "./site/home.ts";
 import { visitLength } from "./service.ts";
 
 export interface GuideSection {
@@ -339,74 +338,19 @@ export const areasPage = {
 };
 
 /**
- * A page for each city ops serve (site/src/lib/served-cities.ts), where a search for a hair system in
- * that city lands. The areas we come to there are listed from the served pincodes, which the site's Worker writes in.
+ * A page for each city ops serve (site/src/lib/served-cities.ts), where a search for a hair system in that city lands,
+ * and paid ads there too (docs/decisions/0326-one-page-per-city.md). The areas we come to there are listed from the
+ * served pincodes, which the site's Worker writes in.
  */
 export const cityPage = {
   publish: true,
-  pageTitle: "Hair systems in {city} — Mane Man",
+  pageTitle: "Hair systems fitted at home in {city} — Mane Man",
+  /** The page's name in the trail above it, and in the list of cities on /areas. */
   title: "Hair systems in {city}",
   description: "Hair systems in 100% real human hair, fitted at your home in {city}. The consultation is free.",
-  lead: "Your technician comes to your home in {city}, matches a hair system to your own hair and fits it there.",
+  /** Over the hero's footage, at its top left. */
+  area: "{city} · home service",
   areas: "Areas we cover in {city}",
   streets: "Within the city, we serve by pincode. Check yours to see the days we can come.",
   check: "Check your pincode",
-  others: "Other cities",
-};
-
-/** A city's own words, beside the lines every city's page has: what it says, and its questions. */
-export interface CityWords {
-  readonly publish: boolean;
-  readonly sections: readonly GuideSection[];
-  readonly questions: readonly FaqItem[];
-}
-
-/**
- * The home page's first question, "Will anyone be able to tell?", whose answer Gurgaon's page gives too: copied, so
- * each page's line is its own on the Words page. Gurgaon's starts from the home page's published wording, and a line
- * published for Gurgaon never changes the home page's.
- */
-const [homeTell] = faq.items;
-const anyoneCanTell: readonly FaqItem[] = homeTell === undefined ? [] : [{ q: homeTell.q, a: homeTell.a }];
-
-/**
- * The words a search for a hair system in a city lands on (docs/decisions/0325-search-pages-and-opening-hours.md).
- * Gurgaon's are a draft for the founder: shown on staging, left out of production until published. They say "hair
- * system", never "hair patch", and give no price.
- */
-export const cityWords: Readonly<Partial<Record<string, CityWords>>> = {
-  Gurgaon: {
-    publish: false,
-    sections: [
-      {
-        heading: "Fitted at your home",
-        paragraphs: [
-          "Your colour is matched against forty samples in daylight, the grey included, and your hairline is drawn and agreed with you. Nothing is fitted until you say so.",
-        ],
-      },
-      {
-        heading: "What you pay for",
-        paragraphs: [
-          "You hear the price at the free consultation, before anything is fitted or paid. It depends on the hair system you choose. No deposit, no package.",
-        ],
-      },
-      {
-        heading: "After the fit",
-        paragraphs: [
-          "A service visit every two to four weeks keeps it at its best, at home: your technician lifts it, cleans it, bonds it again and trims it to your own growth.",
-        ],
-      },
-    ],
-    questions: [
-      {
-        q: "Is the consultation free?",
-        a: "Yes. No fee and no deposit, and if it isn’t for you, you owe nothing.",
-      },
-      {
-        q: "How is a hair system different from a transplant?",
-        a: "A transplant moves hair you still have, and takes months to show. A hair system is real human hair bonded over the area you’ve lost: nothing is cut or moved, and it shows the day it’s fitted.",
-      },
-      ...anyoneCanTell,
-    ],
-  },
 };
