@@ -128,14 +128,18 @@ describe("the site Worker on a city's page", () => {
 
   // Gurgaon's paid ads first landed on /gurgaon, a page of its own beside the city's (ADR 0326).
   it("sends /gurgaon to Gurgaon's page for good, with the ad's tags", async () => {
-    const { env, asked } = siteEnv(() => Response.json({ cities: ["Gurgaon"] }), PAGE);
-    const response = await createSiteWorker().fetch(
-      new Request("https://maneman.in/gurgaon?utm_source=google&gclid=abc"),
-      env,
-    );
-    expect(response.status).toBe(301);
-    expect(response.headers.get("Location")).toBe("https://maneman.in/areas/gurgaon?utm_source=google&gclid=abc");
-    expect(asked).toEqual([]);
+    for (const path of ["/gurgaon", "/gurgaon/"]) {
+      const { env, asked, files } = siteEnv(() => Response.json({ cities: ["Gurgaon"] }), PAGE);
+      const response = await createSiteWorker().fetch(
+        new Request(`https://maneman.in${path}?utm_source=google&gclid=abc`),
+        env,
+      );
+      expect(response.status).toBe(301);
+      expect(response.headers.get("Location")).toBe("https://maneman.in/areas/gurgaon?utm_source=google&gclid=abc");
+      // It looks for Gurgaon's own page among the built files, and asks mm-api nothing.
+      expect(files.map((file) => new URL(file.url).pathname)).toEqual(["/areas/gurgaon"]);
+      expect(asked).toEqual([]);
+    }
   });
 
   // A build made while Gurgaon was served nowhere has no page of its own: the ad's visitor is not sent to the 404.

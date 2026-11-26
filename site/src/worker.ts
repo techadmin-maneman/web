@@ -55,8 +55,8 @@ const FILM = /^\/_astro\/[^/]+\.mp4$/;
 /** The pages that name the cities we come to. */
 const CITY_PAGES = new Set(["/", "/areas"]);
 
-/** Where Gurgaon's paid ads first landed, and the city's page it leads to, with the ad's tags. */
-const GURGAON = { from: "/gurgaon", to: "/areas/gurgaon" } as const;
+/** Where Gurgaon's paid ads first landed, with or without its slash, and the city's page it leads to, with the ad's tags. */
+const GURGAON = { from: /^\/gurgaon\/?$/, to: "/areas/gurgaon" } as const;
 
 /** /gurgaon, sent on to Gurgaon's page for good; to /areas while that page is not built, as for a city served nowhere. */
 async function toGurgaon(visit: Request, env: SiteEnv, url: URL): Promise<Response> {
@@ -461,7 +461,7 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
     const url = new URL(request.url);
     if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
     if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
-    if (url.pathname === GURGAON.from) return toGurgaon(request, env, url);
+    if (GURGAON.from.test(url.pathname)) return toGurgaon(request, env, url);
     const token = PAY_LINK.exec(url.pathname)?.[1];
     if (token !== undefined) return payLink(env, request, url.origin, token);
     const link = CAMPAIGN_LINK.exec(url.pathname);

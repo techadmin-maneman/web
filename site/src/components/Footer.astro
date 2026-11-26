@@ -117,8 +117,10 @@ const year = new Date().getFullYear();
           </button>
         )}
       </nav>
-      <span class="quiet area">{footer.area}</span>
-      <Social />
+      <div class="place">
+        <span class="quiet area">{footer.area}</span>
+        <Social />
+      </div>
     </div>
   </div>
 </footer>
@@ -215,6 +217,14 @@ const year = new Date().getFullYear();
   .quiet {
     color: var(--site-on-navy-muted);
   }
+  /* The area and the company's pages elsewhere, kept together at the line's end however it wraps. */
+  .place {
+    display: flex;
+    flex-wrap: wrap;
+    flex-basis: 100%;
+    align-items: center;
+    gap: 0 var(--sp-16);
+  }
   .area {
     flex-basis: 100%;
     padding-top: var(--sp-8);
@@ -249,9 +259,13 @@ const year = new Date().getFullYear();
       margin-top: var(--sp-48);
       padding-top: var(--sp-12);
     }
-    .area {
+    .place {
       flex-basis: auto;
       margin-left: auto;
+      gap: 0 var(--sp-24);
+    }
+    .area {
+      flex-basis: auto;
       padding-top: 0;
     }
   }
