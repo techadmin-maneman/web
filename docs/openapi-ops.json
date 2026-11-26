@@ -30862,7 +30862,7 @@
     },
     "/api/pincode-directory/pincodes": {
       "get": {
-        "summary": "The pincodes of up to ten of a state's districts, with what each area would be called",
+        "summary": "The pincodes of a state's districts, with what each area would be called",
         "parameters": [
           {
             "schema": {
@@ -30890,7 +30890,7 @@
                     "maxLength": 80
                   },
                   "minItems": 1,
-                  "maxItems": 10
+                  "maxItems": 100
                 }
               ],
               "description": "Named once for each district."
@@ -30913,7 +30913,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: no state, or no district or more than ten",
+            "description": "invalid_request: no state, or no district or more than a hundred",
             "content": {
               "application/json": {
                 "schema": {

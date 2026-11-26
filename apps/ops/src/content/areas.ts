@@ -84,7 +84,6 @@ export const areas = {
     state: "State",
     chooseState: "Choose a state",
     districts: "Districts",
-    districtsHint: "Up to ten.",
     /** "Pune · 98 pincodes, 12 held" */
     district: (name: string, pincodes: number, held: number) =>
       held === 0
@@ -104,7 +103,6 @@ export const areas = {
     adding: "Adding…",
     added: (count: number, city: string, held: number) =>
       `${String(count)} added to ${city}, not served yet.${held === 0 ? "" : ` ${String(held)} already held.`}`,
-    tooMany: "Choose ten districts or fewer.",
     errors: {
       invalid_request: "Check the city.",
       not_permitted: NOT_PERMITTED,

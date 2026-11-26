@@ -148,6 +148,11 @@
     white-space: nowrap;
   }
 
+  /* A row that cannot be chosen (MUTED_ROW): its words in the muted ink. */
+  .table tbody tr.muted > :is(th, td) {
+    color: var(--ui-text-muted);
+  }
+
   /* A row's own buttons, at its end (ACTIONS). */
   .actions {
     white-space: nowrap;

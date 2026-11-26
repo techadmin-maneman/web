@@ -210,7 +210,10 @@ const isSessionEnded = (response: Response) => response.status === 401;
 
 // ---- Asking ------------------------------------------------------------------
 
-/** A path with its parts filled in, and the query after it: "/api/visits/{id}" with { id } → "/api/visits/a". */
+/**
+ * A path with its parts filled in, and the query after it: "/api/visits/{id}" with { id } → "/api/visits/a". A list is
+ * named once for each of its values, as the routes read one: { pincode: [a, b] } → "?pincode=a&pincode=b".
+ */
 export function urlOf(template: string, path: object | undefined, query: object | undefined): string {
   const parts = new Map(Object.entries(path ?? {}));
   const filled = template.replace(/\{(\w+)\}/g, (_match, name: string) =>
@@ -218,7 +221,8 @@ export function urlOf(template: string, path: object | undefined, query: object 
   );
   const search = new URLSearchParams();
   for (const [name, value] of Object.entries(query ?? {})) {
-    if (value !== undefined && value !== null) search.set(name, String(value));
+    if (value === undefined || value === null) continue;
+    for (const each of Array.isArray(value) ? (value as unknown[]) : [value]) search.append(name, String(each));
   }
   const text = search.toString();
   return text === "" ? filled : `${filled}?${text}`;

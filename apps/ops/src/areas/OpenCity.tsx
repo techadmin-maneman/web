@@ -1,4 +1,4 @@
-// Opening a city from India Post's pincodes (src/routes/ops/pincode-directory.ts): a state, up to ten of its districts,
+// Opening a city from India Post's pincodes (src/routes/ops/pincode-directory.ts): a state, any of its districts,
 // then their pincodes, each one not held already ticked, added unserved to one of our cities. Serving them is the
 // table's above; a pincode the directory does not list is still added by hand beneath.
 
@@ -6,7 +6,7 @@ import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { AreaSection } from "./AreaSection.tsx";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, ChoiceGroup, Field, Select } from "@maneman/ui/Field";
-import { Table } from "@maneman/ui/Table";
+import { MUTED_ROW, Table } from "@maneman/ui/Table";
 import { Toast } from "@maneman/ui/Toast";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -23,8 +23,7 @@ import { AREA_NAME } from "./rules.ts";
 import { readUpload, type Upload } from "./served-draft.ts";
 
 const copy = areas.directory;
-const MOST_DISTRICTS = 10;
-/** The API adds this many a call, so each stays one short batch; ten districts can hold four times as many. */
+/** The API adds this many a call, so each stays one short batch; a state's districts can hold many times as many. */
 const PER_CALL = 300;
 
 const toggled = (set: ReadonlySet<string>, values: readonly string[], on: boolean) => {
@@ -36,7 +35,7 @@ const toggled = (set: ReadonlySet<string>, values: readonly string[], on: boolea
   return next;
 };
 
-/** A state and up to ten of its districts, whose pincodes `onShown` is given. */
+/** A state and any of its districts, whose pincodes `onShown` is given. */
 function ChooseDistricts({ onShown }: { onShown: (pincodes: readonly DirectoryPincode[]) => void }) {
   const [states] = useLoad(areasApi.states);
   const [state, setState] = useState("");
@@ -65,7 +64,6 @@ function ChooseDistricts({ onShown }: { onShown: (pincodes: readonly DirectoryPi
       else setCode(answer.code);
     });
 
-  const tooMany = picked.size > MOST_DISTRICTS;
   return (
     <>
       <Field label={copy.state} className={shared.field}>
@@ -81,7 +79,7 @@ function ChooseDistricts({ onShown }: { onShown: (pincodes: readonly DirectoryPi
         )}
       </Field>
       {districts !== null && (
-        <ChoiceGroup legend={copy.districts} hint={copy.districtsHint} inline>
+        <ChoiceGroup legend={copy.districts} inline>
           {districts.map((each) => (
             <Checkbox
               key={each.district}
@@ -100,12 +98,11 @@ function ChooseDistricts({ onShown }: { onShown: (pincodes: readonly DirectoryPi
             icon={ACTION_ICONS.eye}
             variant="outline"
             size="small"
-            disabled={picked.size === 0 || tooMany || busy}
+            disabled={picked.size === 0 || busy}
             onClick={() => void show()}
           >
             {busy ? copy.showing : copy.show}
           </Button>
-          {tooMany && <p className={shared.note}>{copy.tooMany}</p>}
         </div>
       )}
       {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
@@ -113,7 +110,7 @@ function ChooseDistricts({ onShown }: { onShown: (pincodes: readonly DirectoryPi
   );
 }
 
-/** The pincodes shown, a box each; one the service area holds already says where, and cannot be ticked. */
+/** The pincodes shown, a box each; one the service area holds already says where, greyed out, and cannot be ticked. */
 function PincodeTicks(props: {
   pincodes: readonly DirectoryPincode[];
   ticked: ReadonlySet<string>;
@@ -128,6 +125,7 @@ function PincodeTicks(props: {
           <th scope="col">
             <Checkbox
               aria-label={copy.all}
+              disabled={free.length === 0}
               checked={free.length > 0 && free.every((each) => ticked.has(each))}
               onChange={(event) => {
                 onTicked(toggled(ticked, free, event.target.checked));
@@ -143,7 +141,7 @@ function PincodeTicks(props: {
       </thead>
       <tbody>
         {pincodes.map((each) => (
-          <tr key={each.pincode}>
+          <tr key={each.pincode} className={each.held === null ? undefined : MUTED_ROW}>
             <td>
               <Checkbox
                 aria-label={copy.tick(each.pincode, each.area)}
@@ -241,7 +239,7 @@ export function OpenCity(props: { cities: readonly string[]; onAdded: (added: re
   return (
     <AreaSection id="area-open-city" title={copy.title}>
       <ChooseDistricts onShown={shown} />
-      {pincodes !== null && <PincodeTicks pincodes={pincodes} ticked={ticked} onTicked={setTicked} />}
+      {/* The city and Add stand above the list, which may run to a state's pincodes. */}
       {pincodes !== null && (
         <Field label={copy.city} className={shared.field}>
           {(control) => (
@@ -277,6 +275,7 @@ export function OpenCity(props: { cities: readonly string[]; onAdded: (added: re
       )}
       {said !== null && <Toast>{said}</Toast>}
       {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
+      {pincodes !== null && <PincodeTicks pincodes={pincodes} ticked={ticked} onTicked={setTicked} />}
     </AreaSection>
   );
 }

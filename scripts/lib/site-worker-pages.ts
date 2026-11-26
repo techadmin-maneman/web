@@ -11,6 +11,7 @@ export const SITE_WORKER_PAGES = [
   "/guides/*",
   // Where Gurgaon's paid ads first landed, sent on to the city's page (docs/decisions/0326-one-page-per-city.md).
   "/gurgaon",
+  "/gurgaon/",
   "/privacy",
   "/notices",
   "/offer-terms",

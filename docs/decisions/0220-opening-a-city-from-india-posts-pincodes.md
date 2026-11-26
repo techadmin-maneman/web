@@ -1,6 +1,7 @@
 # 0220. Opening a city from India Post's pincodes
 
-- Status: accepted
+- Status: accepted. Amended 26 November 2026, on the owner's ruling: a state's districts may be shown at once, where
+  ten were the most, and a pincode already held is greyed out.
 - Date: 2026-10-25
 - Topic: The ops console
 - Amends [0061](0061-ops-editable-inputs.md)
@@ -23,7 +24,7 @@ records, a map of reach, and demand. This is the first part.
    data.gov.in with a registered key kept in `.env.data-gov`, which is never committed;
    `scripts/ops/load-pincode-directory.ts` loads it into an environment. The file is
    `data/pincodes/india-pincodes.csv`, refreshed each quarter.
-2. **Ops open a city by district,** in Areas › Served, "Add pincodes by district": a state, up to ten of its districts,
+2. **Ops open a city by district,** in Areas › Served, "Add pincodes by district": a state, any of its districts,
    then their pincodes with what each area would be called and whether we hold it already. Those not held are ticked;
    ops untick what they do not want, choose one of our cities and add them. They are added unserved, so serving any of
    them is still the table's step, which says who it would message first (ADR 0071).

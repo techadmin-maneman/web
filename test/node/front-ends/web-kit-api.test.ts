@@ -27,7 +27,12 @@ interface Paths {
   "/api/availability": {
     parameters: { query?: never; header?: never; path?: never; cookie?: never };
     get: {
-      parameters: { query: { type: string; moving?: string }; header?: never; path?: never; cookie?: never };
+      parameters: {
+        query: { type: string; moving?: string; pincode?: string[] };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
       requestBody?: never;
       responses: { 200: { headers: Record<string, unknown>; content: { "application/json": { days: string[] } } } };
     };
@@ -93,6 +98,15 @@ describe("a call", () => {
     const sent = answering(() => json(200, { days: [] }));
     await createClient<Paths, Code>().get("/api/availability", { query: { type: "service" } });
     expect(sent[0]?.url).toBe("/api/availability?type=service");
+  });
+
+  // A list went as one value, "a,b", which a route reading the name once for each value refused or read as one.
+  it("names a list in the query once for each of its values", async () => {
+    const sent = answering(() => json(200, { days: [] }));
+    await createClient<Paths, Code>().get("/api/availability", {
+      query: { type: "service", pincode: ["110001", "110002"] },
+    });
+    expect(sent[0]?.url).toBe("/api/availability?type=service&pincode=110001&pincode=110002");
   });
 
   it("sends its body as JSON", async () => {
