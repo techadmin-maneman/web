@@ -1,6 +1,6 @@
-// Gurgaon's page and its films (docs/decisions/0321-the-gurgaon-page.md, docs/decisions/0326-one-page-per-city.md): its
-// own clients' footage in the hero, and films that fetch nothing until they are tapped, then play in their poster's
-// place and take focus. The home page keeps its own hero and has no founder's film.
+// Gurgaon's page and its films (docs/decisions/0326-one-page-per-city.md): its own clients' footage in the hero, and
+// films that fetch nothing until they are tapped, then play in their poster's place and take focus. The home page
+// keeps its own hero and has no founder's film.
 import { expect, test } from "./support.ts";
 import { founderFilm, founderNote, gurgaonFilms } from "../site/src/content/site.ts";
 

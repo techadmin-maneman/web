@@ -28,7 +28,8 @@ send away a city no longer served.
    try-on; the areas we cover there, which the Worker lists from the served pincodes and shows; the home page's
    questions, which are the page's FAQ for search engines; and the close. The sticky bar is on it, as on the home page.
 2. **`/gurgaon` sends its visitor on to `/areas/gurgaon`** for good (301), with the ad's tags, so a link already
-   given out still lands; the ads themselves name `/areas/gurgaon`.
+   given out still lands; the ads themselves name `/areas/gurgaon`. While that page is not built, as in a build made
+   while Gurgaon was served nowhere, it sends them to `/areas` instead (302), as a city served nowhere does.
 3. **One footer on every page but the flows**: the full one, with an Areas column of each city ops serve and all of
    them at `/areas`. `/book`, the referral landing and `/try` keep none (ADR 0265). The slim footer is gone.
 
@@ -36,6 +37,10 @@ send away a city no longer served.
 
 - A city ops start serving gets its full page at the next deploy or words publish, as before; one with no clients'
   footage yet has the home page's.
-- The paid ads' final address is `/areas/gurgaon`; the ad can still display `maneman.in/Gurgaon`.
+- The paid ads' final address is `/areas/gurgaon`; the ad can still display `maneman.in/Gurgaon`. Production's console
+  must serve Gurgaon before the release that builds its page.
+- The footer lists the cities served as each page was built. On the home page, `/areas` and a city's page the Worker
+  also leaves out one served nowhere since; elsewhere its link leads to `/areas` until the next build, rather than
+  every page asking mm-api for the cities.
 - Tests: `e2e/gurgaon.e2e.ts`, `e2e/guides.e2e.ts`, `e2e/home.e2e.ts`, `e2e/launch.e2e.ts`,
   `test/worker/site/site-worker-cities.test.ts`.

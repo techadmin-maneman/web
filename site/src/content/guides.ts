@@ -345,7 +345,7 @@ export const areasPage = {
 export const cityPage = {
   publish: true,
   pageTitle: "Hair systems fitted at home in {city} — Mane Man",
-  /** The page's name in the trail above it, and in the list of cities on /areas. */
+  /** The page's name in its breadcrumbs for search engines, and in the list of cities on /areas. */
   title: "Hair systems in {city}",
   description: "Hair systems in 100% real human hair, fitted at your home in {city}. The consultation is free.",
   /** Over the hero's footage, at its top left. */

@@ -1,11 +1,10 @@
 ---
-// The footer, on every page but the flows, /book, the referral landing and /try, which each end in themselves (ADR
-// 0265; ADR 0326): navy under a navy-700 rule (ADR 0263), the lockup, its line and the number on the left, the links
-// in columns beside them, each city served among them; then the company, its notices and the area. It has no Book:
-// a page's own call to book is above it.
+// The footer, on every page but the flows (/book, the referral landing, /try), which end in themselves (ADR 0326): the
+// lockup, its line and the number, the links in columns, each city served among them; then the company, its notices
+// and the area. It has no Book: a page's own call to book is above it.
 import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
-import { areasPage } from "../content/guides.ts";
+import { areasPage, cityPage } from "../content/guides.ts";
 import { business, consentBar, footer, whatsapp } from "../content/site.ts";
 import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import { isShown } from "../lib/build.ts";
@@ -27,7 +26,8 @@ interface Props {
 
 const { sections = [], bar = false } = Astro.props;
 const { service, areas, more, reach, legal } = footer.columns;
-const showAreas = isShown(areasPage) && SERVED_CITIES.length > 0;
+// Only where the cities' pages are built (../pages/areas/[city].astro).
+const showAreas = isShown(areasPage) && isShown(cityPage) && SERVED_CITIES.length > 0;
 // The number is given as WhatsApp alone: the footer offers no line to call.
 const showWhatsapp = isShown(whatsapp);
 const year = new Date().getFullYear();
@@ -70,7 +70,9 @@ const year = new Date().getFullYear();
         {showAreas && (
           <div class="column">
             <span class={capsLook("title")}>{areas.title}</span>
-            {/* Each names its city, so the Worker leaves out one no longer served (site/src/worker.ts). */}
+            {/* The cities served as this page was built. On the home page, /areas and a city's page the Worker also
+                leaves out one no longer served (site/src/worker.ts); elsewhere its link leads to /areas until the next
+                build. */}
             {SERVED_CITIES.map((city) => (
               <a
                 class={textLinkLook({ tone: "ink", quiet: true, className: "item" })}
@@ -182,6 +184,7 @@ const year = new Date().getFullYear();
   .item {
     font-size: var(--fs-16);
     color: var(--site-on-navy);
+    overflow-wrap: anywhere;
   }
   /* WhatsApp's mark beside the number, as the sticky bar draws it. */
   .number {
@@ -223,7 +226,6 @@ const year = new Date().getFullYear();
       padding: var(--sp-64) var(--gutter) calc(var(--sp-48) + var(--consent-reserve));
     }
     .top {
-      grid-template-columns: minmax(0, 2fr) minmax(0, 2fr);
       gap: var(--sp-40);
     }
     .tagline {
@@ -251,6 +253,12 @@ const year = new Date().getFullYear();
       flex-basis: auto;
       margin-left: auto;
       padding-top: 0;
+    }
+  }
+  /* The brand and the lists side by side from a laptop's width; below it, the lists have the whole row. */
+  @media (min-width: 1024px) {
+    .top {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 2fr);
     }
   }
 </style>

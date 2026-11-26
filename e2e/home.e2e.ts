@@ -135,7 +135,7 @@ test.describe("the cookie bar on a flow", () => {
   });
 });
 
-test.describe("sticky bar and footer: the home page only", () => {
+test.describe("sticky bar and footer", () => {
   // The bar is a phone's: on a wider screen the header's own button books.
   test("appear on the home page, the bar on a phone once the hero has gone by", async ({ page }, testInfo) => {
     await page.goto("/");

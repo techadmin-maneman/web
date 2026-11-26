@@ -85,7 +85,10 @@ test("each city has its full page, linked from /areas, its areas left for the Wo
   // Built hidden and empty: the Worker lists the areas served there, and shows them.
   const areas = page.locator(`[data-city-areas="${city}"]`);
   await expect(areas).toBeHidden();
+  await expect(areas.locator(`ul[data-areas-of="${city}"]`)).toHaveCount(1);
   await expect(areas.locator('a[href="/book"]')).toHaveText(guideCopy.cityPage.check);
+  // The footer's link names its city too, so the Worker leaves it out once the city is served nowhere.
+  await expect(page.locator(`footer a[data-city="${city}"]`)).toHaveAttribute("href", "/areas/gurgaon");
   // The home page's questions, which are the page's FAQ for search engines too, and nothing tagged.
   await expect(page.locator("#faq summary")).toHaveText(siteCopy.faq.items.map((item) => item.q));
   const data = await structuredData(page);

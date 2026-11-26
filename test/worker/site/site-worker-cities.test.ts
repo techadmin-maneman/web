@@ -77,7 +77,8 @@ describe("the site Worker on a page that names the cities", () => {
     expect(html).not.toContain("Delhi");
   });
 
-  it("asks nothing for a page that names no city", async () => {
+  // Its footer keeps the cities served as it was built (site/src/components/Footer.astro, ADR 0326).
+  it("asks nothing for a page whose words name no city", async () => {
     const page = await visit("/guides", () => Response.json({ cities: ["Gurgaon"] }));
     expect(page.asked).toEqual([]);
   });
@@ -111,6 +112,13 @@ describe("the site Worker on a city's page", () => {
     expect(html).toContain("<li>DLF Phase 2</li><li>Sohna</li>");
   });
 
+  // A city whose only area is the one named for it drew its heading over an empty list.
+  it("keeps the section hidden where the only area is the one named for the city", async () => {
+    const html = await visit(() => Response.json({ cities: ["Gurgaon"], areas: { Gurgaon: ["Gurgaon"] } }));
+    expect(html).toContain('<section data-city-areas="Gurgaon" hidden>');
+    expect(html).toContain('<ul class="areas" data-areas-of="Gurgaon"></ul>');
+  });
+
   // Delhi's page said a technician comes to your home in Delhi, where no pincode was served.
   it("sends a city with no pincode served to the cities we come to", async () => {
     const response = await opened(() => Response.json({ cities: ["Noida"], areas: { Noida: ["Sector 18"] } }));
@@ -128,6 +136,18 @@ describe("the site Worker on a city's page", () => {
     expect(response.status).toBe(301);
     expect(response.headers.get("Location")).toBe("https://maneman.in/areas/gurgaon?utm_source=google&gclid=abc");
     expect(asked).toEqual([]);
+  });
+
+  // A build made while Gurgaon was served nowhere has no page of its own: the ad's visitor is not sent to the 404.
+  it("sends /gurgaon to the cities we come to while Gurgaon's page is not built", async () => {
+    const { env } = siteEnv(() => Response.json({ cities: [] }), PAGE);
+    const notBuilt = { fetch: () => Promise.resolve(new Response("Not found", { status: 404 })) } as unknown as Fetcher;
+    const response = await createSiteWorker().fetch(new Request("https://maneman.in/gurgaon?utm_source=google"), {
+      ...env,
+      ASSETS: notBuilt,
+    });
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("https://maneman.in/areas?utm_source=google");
   });
 
   it("keeps the areas hidden while mm-api cannot say", async () => {
